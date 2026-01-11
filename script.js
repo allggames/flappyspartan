@@ -13,7 +13,7 @@ const sprites = {
     bg: new Image()
 };
 
-// ==========================================
+// Asegúrate de que los archivos se llamen así en tu carpeta:
 sprites.bird.src = "guerrera.png"; 
 sprites.pipe.src = "columna.png";
 sprites.bg.src = "fondo.png";
@@ -23,28 +23,23 @@ sprites.bg.src = "fondo.png";
 const bg = {
     draw: function() {
         if (!sprites.bg.complete) return;
-        
-        // Dibuja el fondo centrado (recortando los lados si sobra)
-        // para que no se deforme el templo
-        const scale = canvas.height / sprites.bg.height; 
-        const w = sprites.bg.width * scale;
-        const x = (canvas.width - w) / 2;
-        
-        ctx.drawImage(sprites.bg, x, 0, w, canvas.height);
+        // Dibujamos el fondo cubriendo todo el canvas
+        ctx.drawImage(sprites.bg, 0, 0, canvas.width, canvas.height);
     }
 }
 
 const bird = {
     x: 50, 
-    y: 200,
-    // TAMAÑO GRANDE: 45x45 en esta resolución se ve MUCHO más grande
-    w: 45, 
-    h: 45, 
-    radius: 18, 
+    y: 150,
+    // ¡AQUÍ ESTÁ EL CAMBIO! 
+    // He puesto tamaños grandes para una resolución de 320x480.
+    // 50px es bastante grande en una pantalla de 320px de ancho.
+    w: 50, 
+    h: 50, 
+    radius: 20, 
     speed: 0,
-    // Físicas ajustadas para resolución 360x640
     gravity: 0.25,
-    jump: -5.5, 
+    jump: -4.6, 
     rotation: 0,
     
     draw: function() {
@@ -53,13 +48,15 @@ const bird = {
         ctx.save();
         ctx.translate(this.x, this.y);
         
+        // Rotación al saltar/caer
         if (this.speed >= this.jump) {
-            this.rotation = Math.min(Math.PI / 4, this.rotation + 3 * RAD);
+            this.rotation = Math.min(Math.PI / 4, this.rotation + 5 * RAD);
         } else {
             this.rotation = -25 * RAD;
         }
         ctx.rotate(this.rotation);
         
+        // Dibujamos la guerrera
         ctx.drawImage(sprites.bird, -this.w/2, -this.h/2, this.w, this.h);
         ctx.restore();
     },
@@ -70,12 +67,13 @@ const bird = {
     
     update: function() {
         if(state.current == state.getReady) {
-            this.y = 200 - 5 * Math.cos(frames/15); // Flotar suave
+            this.y = 150 - 5 * Math.cos(frames/15);
             this.rotation = 0;
         } else {
             this.speed += this.gravity;
             this.y += this.speed;
             
+            // Suelo
             if(this.y + this.h/2 >= canvas.height - 40) {
                 this.y = canvas.height - 40 - this.h/2;
                 if(state.current == state.game) state.current = state.over;
@@ -86,10 +84,10 @@ const bird = {
 
 const pipes = {
     position: [],
-    w: 65,  // Columnas más anchas y visibles
-    h: 400, 
-    dx: 3,  // Velocidad normal
-    gap: 140, // Espacio justo para pasar
+    w: 60,  // Columnas anchas
+    h: 400, // Altura base
+    dx: 2,  // Velocidad
+    gap: 130, // Hueco generoso para que pase la guerrera grande
     
     draw: function() {
         if (!sprites.pipe.complete) return;
@@ -99,14 +97,14 @@ const pipes = {
             let topY = p.y; 
             let bottomY = p.y + this.gap;
             
-            // Columna Arriba (Invertida)
+            // Arriba (Espejo)
             ctx.save();
             ctx.translate(p.x, topY);
-            ctx.scale(1, -1);
+            ctx.scale(1, -1); 
             ctx.drawImage(sprites.pipe, 0, 0, this.w, this.h);
             ctx.restore();
             
-            // Columna Abajo
+            // Abajo (Normal)
             ctx.drawImage(sprites.pipe, p.x, bottomY, this.w, this.h);
         }
     },
@@ -114,11 +112,11 @@ const pipes = {
     update: function() {
         if(state.current !== state.game) return;
         
-        if(frames % 100 == 0) {
+        // Añadir columna cada 120 frames
+        if(frames % 120 == 0) {
             this.position.push({
                 x: canvas.width,
-                // Altura aleatoria del hueco
-                y: Math.random() * (canvas.height - 300) + 100
+                y: Math.random() * (canvas.height - 350) + 150
             });
         }
         
@@ -126,7 +124,7 @@ const pipes = {
             let p = this.position[i];
             p.x -= this.dx;
             
-            // Colisiones
+            // Colisiones (ajustadas al nuevo tamaño)
             let hitX = p.x + 5;
             let hitW = this.w - 10;
             let bottomPipeYPos = p.y + this.gap;
@@ -160,19 +158,16 @@ const score = {
         ctx.lineWidth = 2;
         
         if(state.current == state.game) {
-            ctx.font = "50px Verdana";
-            ctx.strokeText(this.value, canvas.width/2, 80);
-            ctx.fillText(this.value, canvas.width/2, 80);
+            ctx.font = "40px Verdana";
+            ctx.strokeText(this.value, canvas.width/2, 50);
+            ctx.fillText(this.value, canvas.width/2, 50);
         } else if(state.current == state.over) {
             ctx.font = "30px Verdana";
             ctx.strokeText("Score: " + this.value, canvas.width/2, 180);
             ctx.fillText("Score: " + this.value, canvas.width/2, 180);
             
-            ctx.strokeText("Best: " + this.best, canvas.width/2, 230);
-            ctx.fillText("Best: " + this.best, canvas.width/2, 230);
-            
+            ctx.font = "40px Verdana";
             ctx.fillStyle = "#e74c3c";
-            ctx.font = "50px Verdana";
             ctx.strokeText("GAME OVER", canvas.width/2, 120);
             ctx.fillText("GAME OVER", canvas.width/2, 120);
             
@@ -182,19 +177,19 @@ const score = {
         } else if(state.current == state.getReady) {
             ctx.fillStyle = "#f1c40f";
             ctx.font = "40px Verdana";
-            ctx.strokeText("SPARTAN", canvas.width/2, 150);
-            ctx.fillText("SPARTAN", canvas.width/2, 150);
+            ctx.strokeText("SPARTAN", canvas.width/2, 200);
+            ctx.fillText("SPARTAN", canvas.width/2, 200);
             
             ctx.fillStyle = "#FFF";
             ctx.font = "20px Verdana";
-            ctx.fillText("Click o Espacio", canvas.width/2, 200);
+            ctx.fillText("Toca para saltar", canvas.width/2, 240);
         }
     }
 }
 
 // --- CONTROL ---
 function action(evt) {
-    if(evt.type === 'touchstart') evt.preventDefault();
+    if(evt.type === 'touchstart') evt.preventDefault(); // Evita doble toque zoom
     switch(state.current) {
         case state.getReady: state.current = state.game; break;
         case state.game: bird.flap(); break;
@@ -213,10 +208,6 @@ window.addEventListener("touchstart", action, {passive: false});
 
 // --- INICIO ---
 function loop() {
-    // Fondo de seguridad por si no carga la imagen
-    ctx.fillStyle = "#70c5ce"; 
-    ctx.fillRect(0,0,canvas.width, canvas.height);
-
     bg.draw();
     pipes.update();
     pipes.draw();

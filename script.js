@@ -1,132 +1,129 @@
 const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
 
-// --- VARIABLES ---
+// --- CONFIGURACIÓN ---
 let frames = 0;
-const RAD = Math.PI / 180;
+const scale = 2; // Escala para simular píxeles grandes (Retro Style)
 
-const state = {
-    current: 0,
-    getReady: 0,
-    game: 1,
-    over: 2
-}
+const state = { current: 0, getReady: 0, game: 1, over: 2 };
 
-// CONTROL DEL JUEGO
-function clickHandler() {
-    switch(state.current) {
-        case state.getReady:
-            state.current = state.game;
-            break;
-        case state.game:
-            bird.flap();
-            break;
-        case state.over:
-            bird.speedReset();
-            pipes.reset();
-            score.value = 0;
-            frames = 0;
-            state.current = state.getReady;
-            break;
+// --- ARTISTA DE PÍXELES (SPRITES) ---
+// Estos mapas definen los dibujos. Cada letra es un color.
+// R=Rojo, D=Dorado, P=Piel, N=Negro, B=Blanco, G=Gris, _=Transparente
+
+const spartanMap = [
+    "____RRR_____",
+    "___RRRRR____",
+    "__DDDDDDD___",
+    "__DNDDDND___",
+    "__DDDDDDD___",
+    "__DPPPPD____",
+    "__RR_RR_____",
+    "_DD__DD_____", // Cuerpo y escudo
+    "_DD__DD____D", // La 'D' final es la punta de la lanza
+    "_____DD____D",
+    "_____DD____D"
+];
+
+const columnTopMap = [
+    "GGGGGGGGGG",
+    "GGBBBBBBGG",
+    "BBBBBBBBBB",
+    "BBBBBBBBBB"
+];
+
+const columnBodyMap = [
+    "GG B GG B GG", // Patrón repetitivo de la columna
+    "GG B GG B GG",
+    "GG B GG B GG",
+    "GG B GG B GG"
+];
+
+const owlMap = [
+    "__BBBB__",
+    "_BWBWB__",
+    "_BBBBB__",
+    "__MMM___",
+    "__M_M___"
+];
+
+// Paleta de colores
+const palette = {
+    'R': '#e74c3c', // Rojo Pluma
+    'D': '#f1c40f', // Dorado Casco
+    'P': '#ffcdb2', // Piel
+    'N': '#000000', // Negro Ojos
+    'B': '#ecf0f1', // Blanco Marmol
+    'G': '#bdc3c7', // Gris Sombra
+    'W': '#ffffff', // Blanco Ojos Buho
+    'M': '#8d6e63'  // Marrón Buho
+};
+
+// Función mágica que dibuja los mapas anteriores
+function drawPixelArt(ctx, map, startX, startY, pixelSize) {
+    for (let r = 0; r < map.length; r++) {
+        for (let c = 0; c < map[r].length; c++) {
+            let colorCode = map[r][c];
+            if (colorCode !== ' ' && colorCode !== '_') {
+                ctx.fillStyle = palette[colorCode] || colorCode;
+                ctx.fillRect(startX + c * pixelSize, startY + r * pixelSize, pixelSize, pixelSize);
+            }
+        }
     }
 }
 
-document.addEventListener("click", clickHandler);
-document.addEventListener("keydown", function(e) {
-    if (e.code === "Space") clickHandler();
-});
-
-// --- OBJETOS DIBUJADOS CON CÓDIGO (Sin imágenes externas) ---
+// --- OBJETOS DEL JUEGO ---
 
 const bg = {
     draw: function() {
-        // Cielo Azul Griego
-        ctx.fillStyle = "#4bb4e6";
+        // Cielo
+        ctx.fillStyle = "#64b5f6";
         ctx.fillRect(0, 0, canvas.width, canvas.height);
         
-        // Nubes decorativas (círculos blancos)
-        ctx.fillStyle = "rgba(255, 255, 255, 0.6)";
+        // Templo de fondo (simplificado)
+        ctx.fillStyle = "#e3f2fd"; // Blanco azulado
+        // Base
+        ctx.fillRect(50, 300, 220, 10);
+        // Columnas fondo
+        for(let i=0; i<6; i++) ctx.fillRect(60 + i*40, 220, 10, 80);
+        // Techo
         ctx.beginPath();
-        ctx.arc(50, 400, 30, 0, Math.PI * 2);
-        ctx.arc(100, 400, 40, 0, Math.PI * 2);
-        ctx.arc(280, 380, 40, 0, Math.PI * 2);
+        ctx.moveTo(40, 220);
+        ctx.lineTo(160, 150);
+        ctx.lineTo(280, 220);
         ctx.fill();
         
-        // Un templo lejano (opcional)
-        ctx.fillStyle = "#e0e0e0";
-        ctx.fillRect(180, 300, 100, 10); // Base
-        for(let i=0; i<6; i++) ctx.fillRect(185 + i*15, 270, 5, 30); // Columnas
-        ctx.beginPath(); // Techo triangular
-        ctx.moveTo(180, 270);
-        ctx.lineTo(230, 240);
-        ctx.lineTo(280, 270);
-        ctx.fill();
+        // Nubes pixeladas
+        ctx.fillStyle = "#FFF";
+        ctx.fillRect(50 - frames/2 % 400, 50, 60, 20);
+        ctx.fillRect(250 - frames/3 % 400, 80, 80, 25);
     }
 }
 
 const fg = {
-    h: 112,
+    h: 80,
     draw: function() {
-        // Suelo color arena/tierra
-        ctx.fillStyle = "#e3cca5";
+        // Suelo Arena
+        ctx.fillStyle = "#e0c097";
         ctx.fillRect(0, canvas.height - this.h, canvas.width, this.h);
-        // Borde superior del suelo (hierba o detalle)
+        // Borde superior
         ctx.fillStyle = "#cbb28a";
-        ctx.fillRect(0, canvas.height - this.h, canvas.width, 10);
+        ctx.fillRect(0, canvas.height - this.h, canvas.width, 6);
     }
 }
 
 const bird = {
     x: 50,
     y: 150,
-    w: 30,
-    h: 30,
+    w: 12 * scale, // 12 pixeles de ancho por la escala
+    h: 11 * scale,
     speed: 0,
     gravity: 0.25,
     jump: -4.6,
-    rotation: 0,
     
     draw: function() {
-        ctx.save();
-        ctx.translate(this.x, this.y);
-        
-        // Rotación
-        if (this.speed >= this.jump) {
-            this.rotation = Math.min(Math.PI / 4, this.rotation + 5 * RAD);
-        } else {
-            this.rotation = -25 * RAD;
-        }
-        ctx.rotate(this.rotation);
-        
-        // DIBUJO DEL ESPARTANO (Simplificado)
-        
-        // 1. Pluma del casco (Roja)
-        ctx.fillStyle = "#e74c3c";
-        ctx.beginPath();
-        ctx.moveTo(-5, -15);
-        ctx.lineTo(10, -15);
-        ctx.lineTo(0, -5);
-        ctx.fill();
-        
-        // 2. Casco (Dorado)
-        ctx.fillStyle = "#f1c40f";
-        ctx.fillRect(-10, -10, 20, 20);
-        
-        // 3. Ojo (Negro)
-        ctx.fillStyle = "#000";
-        ctx.fillRect(2, -5, 4, 4);
-        
-        // 4. Capa (Roja atrás)
-        ctx.fillStyle = "#c0392b";
-        ctx.fillRect(-15, 0, 10, 15);
-        
-        // 5. Cuerpo/Escudo (Dorado oscuro)
-        ctx.fillStyle = "#d35400";
-        ctx.beginPath();
-        ctx.arc(0, 5, 10, 0, Math.PI*2);
-        ctx.fill();
-
-        ctx.restore();
+        // Dibujar al espartano usando el mapa
+        drawPixelArt(ctx, spartanMap, this.x, this.y, scale);
     },
     
     flap: function() {
@@ -135,14 +132,13 @@ const bird = {
     
     update: function() {
         if(state.current == state.getReady) {
-            this.y = 150 - 10 * Math.cos(frames/15);
-            this.rotation = 0;
+            this.y = 150 - 5 * Math.cos(frames/15);
         } else {
             this.speed += this.gravity;
             this.y += this.speed;
             
-            if(this.y + this.h/2 >= canvas.height - fg.h) {
-                this.y = canvas.height - fg.h - this.h/2;
+            if(this.y + this.h >= canvas.height - fg.h) {
+                this.y = canvas.height - fg.h - this.h;
                 if(state.current == state.game) state.current = state.over;
             }
         }
@@ -151,10 +147,10 @@ const bird = {
 
 const pipes = {
     position: [],
-    w: 52,
+    w: 40, 
     h: 400,
     dx: 2,
-    gap: 120, // Más espacio para que sea fácil
+    gap: 110,
     
     draw: function() {
         for(let i = 0; i < this.position.length; i++) {
@@ -162,38 +158,33 @@ const pipes = {
             let topY = p.y;
             let bottomY = p.y + this.h + this.gap;
             
-            // DIBUJO DE COLUMNAS GRIEGAS
+            // DIBUJAR COLUMNAS GRIEGAS PIXELADAS
             
-            // Función auxiliar para dibujar una columna
-            function drawColumn(x, y, width, height) {
-                ctx.fillStyle = "#ecf0f1"; // Blanco marmol
-                ctx.fillRect(x, y, width, height);
-                
-                // Estrías (rayas verticales) de la columna
-                ctx.fillStyle = "#bdc3c7"; // Gris
-                ctx.fillRect(x + 10, y, 5, height);
-                ctx.fillRect(x + 25, y, 5, height);
-                ctx.fillRect(x + 40, y, 5, height);
-                
-                // Borde negro fino
-                ctx.strokeStyle = "#555";
-                ctx.lineWidth = 2;
-                ctx.strokeRect(x, y, width, height);
+            // 1. Columna Arriba
+            ctx.fillStyle = "#ecf0f1"; // Color base
+            ctx.fillRect(p.x, topY, this.w, this.h); // Cuerpo solido relleno
+            // Detalles verticales (estrías)
+            ctx.fillStyle = "#bdc3c7";
+            ctx.fillRect(p.x + 10, topY, 4, this.h);
+            ctx.fillRect(p.x + 26, topY, 4, this.h);
+            
+            // Capitel (Remate) de abajo de la columna superior
+            drawPixelArt(ctx, columnTopMap, p.x, topY + this.h - 16, 4);
+
+            // 2. Columna Abajo
+            ctx.fillStyle = "#ecf0f1";
+            ctx.fillRect(p.x, bottomY, this.w, this.h);
+            ctx.fillStyle = "#bdc3c7";
+            ctx.fillRect(p.x + 10, bottomY, 4, this.h);
+            ctx.fillRect(p.x + 26, bottomY, 4, this.h);
+            
+            // Capitel de arriba de la columna inferior
+            drawPixelArt(ctx, columnTopMap, p.x, bottomY, 4);
+
+            // Búho decorativo (probabilidad del 30%)
+            if(p.hasOwl) {
+                drawPixelArt(ctx, owlMap, p.x + 5, bottomY - 25, 4);
             }
-
-            // Tubería Arriba
-            drawColumn(p.x, topY, this.w, this.h);
-            // Capitel (parte ancha de la columna)
-            ctx.fillStyle = "#ecf0f1";
-            ctx.fillRect(p.x - 5, topY + this.h - 20, this.w + 10, 20);
-            ctx.strokeRect(p.x - 5, topY + this.h - 20, this.w + 10, 20);
-
-            // Tubería Abajo
-            drawColumn(p.x, bottomY, this.w, this.h);
-            // Capitel
-            ctx.fillStyle = "#ecf0f1";
-            ctx.fillRect(p.x - 5, bottomY, this.w + 10, 20);
-            ctx.strokeRect(p.x - 5, bottomY, this.w + 10, 20);
         }
     },
     
@@ -203,7 +194,8 @@ const pipes = {
         if(frames % 120 == 0) {
             this.position.push({
                 x: canvas.width,
-                y: -150 * (Math.random() + 1)
+                y: -150 * (Math.random() + 1),
+                hasOwl: Math.random() < 0.3
             });
         }
         
@@ -211,11 +203,11 @@ const pipes = {
             let p = this.position[i];
             p.x -= this.dx;
             
-            // Colisiones simples
             let bottomPipeYPos = p.y + this.h + this.gap;
             
-            if(bird.x + bird.w/2 > p.x && bird.x - bird.w/2 < p.x + this.w && 
-               (bird.y - bird.h/2 < p.y + this.h || bird.y + bird.h/2 > bottomPipeYPos)) {
+            // Colisiones
+            if(bird.x + bird.w > p.x && bird.x < p.x + this.w && 
+               (bird.y < p.y + this.h || bird.y + bird.h > bottomPipeYPos)) {
                 state.current = state.over;
             }
             
@@ -256,14 +248,30 @@ const score = {
         } else if(state.current == state.getReady) {
             ctx.fillStyle = "#f1c40f";
             ctx.font = "30px Verdana";
-            ctx.fillText("GET READY", canvas.width/2 - 85, 200);
-            ctx.strokeText("GET READY", canvas.width/2 - 85, 200);
+            ctx.fillText("SPARTAN JUMP", canvas.width/2 - 115, 200);
+            ctx.strokeText("SPARTAN JUMP", canvas.width/2 - 115, 200);
             ctx.fillStyle = "#FFF";
             ctx.font = "15px Verdana";
-            ctx.fillText("(Tap to Jump)", canvas.width/2 - 50, 230);
+            ctx.fillText("Click para empezar", canvas.width/2 - 70, 240);
         }
     }
 }
+
+// CONTROL
+function action() {
+    switch(state.current) {
+        case state.getReady: state.current = state.game; break;
+        case state.game: bird.flap(); break;
+        case state.over: 
+            bird.speed = 0;
+            pipes.reset();
+            score.value = 0;
+            state.current = state.getReady;
+            break;
+    }
+}
+document.addEventListener("click", action);
+document.addEventListener("keydown", (e) => { if(e.code === "Space") action(); });
 
 // BUCLE PRINCIPAL
 function loop() {

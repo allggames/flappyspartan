@@ -7,12 +7,13 @@ body {
     height: 100vh;
     background-color: #333; /* Fondo gris oscuro fuera del juego */
     font-family: 'Arial', sans-serif;
-    overflow: hidden; /* Evita barras de desplazamiento si la pantalla es chica */
+    overflow: hidden; /* Evita barras de desplazamiento */
 }
 
 canvas {
     display: block;
     border: 4px solid #fff;
     box-shadow: 0 0 20px rgba(0,0,0,0.5);
-    background-color: #70c5ce; /* Color del cielo */
+    /* Color azul cielo base, por si la imagen tarda en cargar */
+    background-color: #5c94fc; 
 }

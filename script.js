@@ -14,9 +14,9 @@ const sprites = {
 };
 
 // ¡Asegúrate de que estos nombres coincidan con tus archivos!
-sprites.bird.src = "guerrera.jpg"; // Si consigues el PNG sin fondo, cambia esto a .png
+sprites.bird.src = "guerrera.png"; // Si consigues el PNG sin fondo, cambia esto a .png
 sprites.pipe.src = "columna.png";
-sprites.bg.src = "fondo.jpg";
+sprites.bg.src = "fondo.png";
 
 // --- OBJETOS ---
 

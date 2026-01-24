@@ -70,6 +70,7 @@ const bird = {
         }
         ctx.rotate(this.rotation);
         
+        // Dibujamos siempre a la guerrera
         ctx.drawImage(sprites.bird, -this.w/2, -this.h/2, this.w, this.h);
         
         if (DEBUG) {
@@ -92,7 +93,8 @@ const bird = {
         }
 
         if(state.current == state.getReady) {
-            this.y = canvas.height / 2 - 20 * Math.cos(frames/30);
+            // En el inicio, flota suavemente en el centro
+            this.y = canvas.height / 2 + 10 * Math.cos(frames/20);
             this.rotation = 0;
         } else {
             this.speed += this.gravity;
@@ -116,10 +118,8 @@ const pipes = {
     h: 1000,  
     dx: 7,    
     gap: 390,
-    
     hitMargin: 40,      
     columnaPadding: 200, 
-    
     floorHeight: 50, 
     
     draw: function() {
@@ -209,43 +209,42 @@ const ui = {
         ctx.fillStyle = "#FFF";
         ctx.strokeStyle = "#000";
         ctx.textAlign = "center";
-        // Grosor del borde de las letras
         ctx.lineWidth = 5; 
         
-        // --- PUNTUACIÓN (Porcentaje durante el juego) ---
+        // --- PUNTUACIÓN EN JUEGO ---
         if(state.current == state.game || state.current == state.win) {
-            // Usamos la fuente más decorativa y GRUESA (peso 900)
             ctx.font = "900 120px 'Cinzel Decorative', serif";
-            ctx.fillStyle = "#FFD700"; // Dorado
-            // Sombra para darle relieve 3D
+            ctx.fillStyle = "#FFD700"; 
             ctx.shadowColor = "rgba(0,0,0,0.8)";
             ctx.shadowBlur = 15;
             ctx.strokeText(displayScore, canvas.width/2, 150);
             ctx.fillText(displayScore, canvas.width/2, 150);
-            // Quitamos sombra para el resto
             ctx.shadowBlur = 0; 
             ctx.fillStyle = "#FFF"; 
         }
 
-        // --- PANTALLA INICIO ---
+        // --- PANTALLA INICIO (LIMPIA Y ÉPICA) ---
         if(state.current == state.getReady) {
-            ctx.fillStyle = "#f1c40f";
-            // Título principal: Grueso y decorativo
+            // Título Principal
+            ctx.fillStyle = "#f1c40f"; // Dorado Espartano
             ctx.font = "900 110px 'Cinzel Decorative', serif";
             ctx.shadowColor = "rgba(0,0,0,1)";
-            ctx.shadowBlur = 20;
-            ctx.strokeText("SPARTAN", canvas.width/2, canvas.height/2 - 100);
-            ctx.fillText("SPARTAN", canvas.width/2, canvas.height/2 - 100);
+            ctx.shadowBlur = 25;
+            ctx.strokeText("SPARTAN", canvas.width/2, canvas.height/2 - 120);
+            ctx.fillText("SPARTAN", canvas.width/2, canvas.height/2 - 120);
+            
+            // Subtítulo
             ctx.shadowBlur = 0;
-
             ctx.fillStyle = "#FFF";
-            // Subtítulo: Más limpio, pero en negrita (peso 700)
             ctx.font = "700 45px 'Cinzel', serif";
-            ctx.fillText("Toca para empezar", canvas.width/2, canvas.height/2 + 50);
+            // Dibujamos un borde negro fino al texto pequeño para que se lea mejor sobre el fondo
+            ctx.lineWidth = 3; 
+            ctx.strokeText("TOCA PARA EMPEZAR", canvas.width/2, canvas.height/2 - 40);
+            ctx.fillText("TOCA PARA EMPEZAR", canvas.width/2, canvas.height/2 - 40);
         } 
         // --- PANTALLA GAME OVER ---
         else if(state.current == state.over) {
-            ctx.fillStyle = "#e74c3c"; // Rojo
+            ctx.fillStyle = "#e74c3c"; 
             ctx.font = "900 100px 'Cinzel Decorative', serif";
             ctx.shadowColor = "rgba(0,0,0,1)";
             ctx.shadowBlur = 20;
@@ -259,6 +258,7 @@ const ui = {
 
             ctx.fillStyle = "#FFF";
             ctx.font = "700 40px 'Cinzel', serif";
+            ctx.strokeText("Toca para reiniciar", canvas.width/2, canvas.height/2 + 150);
             ctx.fillText("Toca para reiniciar", canvas.width/2, canvas.height/2 + 150);
         }
         // --- PANTALLA VICTORIA ---
@@ -278,6 +278,7 @@ const ui = {
             
             ctx.fillStyle = "#FFF";
             ctx.font = "700 45px 'Cinzel', serif";
+            ctx.strokeText("Misión Cumplida", canvas.width/2, canvas.height/2 + 160);
             ctx.fillText("Misión Cumplida", canvas.width/2, canvas.height/2 + 160);
             ctx.font = "700 35px 'Cinzel', serif";
             ctx.fillText("Click para jugar de nuevo", canvas.width/2, canvas.height/2 + 230);

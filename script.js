@@ -17,20 +17,26 @@ const sprites = {
     pipe: new Image(),
     bg: new Image(),
     owl: new Image(),
-    panelTexture: new Image() // La textura del recuadro
+    panelTexture: new Image()
 };
 
 sprites.bird.src = "guerrera.png"; 
 sprites.pipe.src = "columna.png";
 sprites.bg.src = "fondo.png";
 sprites.owl.src = "buho.png"; 
-
-// --- ¡IMPORTANTE! RENOMBRA TU IMAGEN DE PIEDRA A "textura.jpg" ---
 sprites.panelTexture.src = "textura.jpg"; 
 
 // --- VARIABLES DE JUEGO ---
 let pipesPassed = 0; 
 let displayScore = "0%"; 
+
+// Variable para guardar la posición del botón y detectar el clic
+let restartBtn = {
+    x: 0,
+    y: 0,
+    w: 300,
+    h: 80
+};
 
 // --- OBJETOS ---
 
@@ -49,8 +55,8 @@ const bg = {
 const bird = {
     x: canvas.width / 3, 
     y: canvas.height / 2,
-    w: 230, 
-    h: 230, 
+    w: 180, 
+    h: 180, 
     radius: 25, 
     speed: 0,
     gravity: 0.4,  
@@ -208,31 +214,25 @@ const pipes = {
     totalSpawned: 0
 }
 
-// --- FUNCIÓN DE PANEL CON TEXTURA ---
 function drawPanel(height) {
     const w = canvas.width * 0.85; 
     const h = height || 400; 
     const x = (canvas.width - w) / 2;
     const y = (canvas.height - h) / 2;
     
-    // 1. Oscurecer la pantalla de fondo
     ctx.fillStyle = "rgba(0, 0, 0, 0.6)";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    // 2. DIBUJAR LA TEXTURA (Si carga, si no, negro)
     if (sprites.panelTexture.complete && sprites.panelTexture.naturalWidth > 0) {
         ctx.drawImage(sprites.panelTexture, x, y, w, h);
     } else {
-        ctx.fillStyle = "#111"; // Fallback negro si falla la imagen
+        ctx.fillStyle = "#111"; 
         ctx.fillRect(x, y, w, h);
     }
     
-    // 3. CAPA OSCURA ENCIMA (Para que el texto resalte)
-    // 0.3 es suave, deja ver la textura. 0.7 sería muy oscuro.
     ctx.fillStyle = "rgba(0, 0, 0, 0.3)"; 
     ctx.fillRect(x, y, w, h);
 
-    // 4. BORDES
     ctx.strokeStyle = "#FFD700"; 
     ctx.lineWidth = 8;
     ctx.strokeRect(x, y, w, h);
@@ -250,7 +250,7 @@ const ui = {
         ctx.strokeStyle = "#000";
         ctx.textAlign = "center";
         
-        // JUEGO (Puntaje)
+        // JUEGO
         if(state.current == state.game) {
             ctx.lineWidth = 5; 
             ctx.font = "900 120px 'Cinzel Decorative', serif";
@@ -306,10 +306,6 @@ const ui = {
                 ctx.strokeText(displayScore, canvas.width/2, centerY + 90);
                 ctx.fillText(displayScore, canvas.width/2, centerY + 90);
 
-                ctx.fillStyle = "#FFF";
-                ctx.font = "700 30px 'Cinzel', serif";
-                ctx.fillText("Toca para jugar de nuevo", canvas.width/2, centerY + 180);
-
             } else {
                 // GAME OVER MALO
                 ctx.fillStyle = "#e74c3c"; 
@@ -322,12 +318,10 @@ const ui = {
                 ctx.fillStyle = "#ccc"; 
                 ctx.font = "700 45px 'Cinzel', serif";
                 ctx.fillText("Sin Bono", canvas.width/2, centerY + 20);
-
-                ctx.fillStyle = "#FFF";
-                ctx.font = "700 35px 'Cinzel', serif";
-                ctx.strokeText("INTENTA DE NUEVO", canvas.width/2, centerY + 130);
-                ctx.fillText("INTENTA DE NUEVO", canvas.width/2, centerY + 130);
             }
+
+            // --- DIBUJAR BOTÓN ---
+            this.drawRestartButton(centerY + 160);
         }
         
         // VICTORIA
@@ -352,43 +346,112 @@ const ui = {
             ctx.strokeText("BONO TOTAL: " + displayScore, canvas.width/2, centerY + 110);
             ctx.fillText("BONO TOTAL: " + displayScore, canvas.width/2, centerY + 110);
 
-            ctx.font = "700 30px 'Cinzel', serif";
-            ctx.fillText("Click para jugar de nuevo", canvas.width/2, centerY + 200);
+            // --- DIBUJAR BOTÓN ---
+            this.drawRestartButton(centerY + 210);
         }
+    },
+
+    // FUNCIÓN PARA DIBUJAR EL BOTÓN FÍSICO
+    drawRestartButton: function(yPos) {
+        // Configuramos la posición del botón
+        restartBtn.w = 350;
+        restartBtn.h = 80;
+        restartBtn.x = canvas.width / 2 - restartBtn.w / 2;
+        restartBtn.y = yPos;
+
+        // Sombra del botón
+        ctx.fillStyle = "#000";
+        ctx.fillRect(restartBtn.x + 5, restartBtn.y + 5, restartBtn.w, restartBtn.h);
+
+        // Fondo del botón (Dorado)
+        ctx.fillStyle = "#FFD700";
+        ctx.fillRect(restartBtn.x, restartBtn.y, restartBtn.w, restartBtn.h);
+
+        // Borde del botón
+        ctx.strokeStyle = "#C0A000";
+        ctx.lineWidth = 4;
+        ctx.strokeRect(restartBtn.x, restartBtn.y, restartBtn.w, restartBtn.h);
+
+        // Texto del botón
+        ctx.fillStyle = "#3e2723"; // Marrón oscuro para contraste
+        ctx.font = "700 35px 'Cinzel', serif";
+        ctx.fillText("JUGAR DE NUEVO", canvas.width/2, restartBtn.y + 52);
     }
+}
+
+// --- FUNCIÓN PARA DETECTAR EL CLICK EXACTO ---
+function getClickPos(evt) {
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    
+    // Obtenemos las coordenadas dependiendo si es touch o mouse
+    let clientX, clientY;
+    if(evt.type.startsWith('touch')) {
+         clientX = evt.changedTouches[0].clientX;
+         clientY = evt.changedTouches[0].clientY;
+    } else {
+         clientX = evt.clientX;
+         clientY = evt.clientY;
+    }
+
+    return {
+        x: (clientX - rect.left) * scaleX,
+        y: (clientY - rect.top) * scaleY
+    };
 }
 
 // --- CONTROL ---
 function action(evt) {
+    // Si es touch, prevenimos el scroll, excepto si toca el botón
     if(evt.type === 'touchstart') evt.preventDefault();
     
     switch(state.current) {
         case state.getReady: 
             state.current = state.game; 
             break;
+            
         case state.game: 
             bird.flap(); 
             break;
+            
         case state.over: 
-            bird.speed = 0;
-            pipes.reset();
-            pipesPassed = 0;
-            displayScore = "0%"; 
-            pipes.totalSpawned = 0;
-            state.current = state.getReady;
-            break;
         case state.win:
-            bird.speed = 0;
-            pipes.reset();
-            pipesPassed = 0;
-            displayScore = "0%"; 
-            pipes.totalSpawned = 0;
-            state.current = state.getReady;
+            // --- AQUÍ ESTÁ LA MAGIA DEL BOTÓN ---
+            // Calculamos dónde hizo click el usuario
+            const click = getClickPos(evt);
+            
+            // Verificamos si el click está DENTRO del rectángulo del botón
+            if (click.x >= restartBtn.x && 
+                click.x <= restartBtn.x + restartBtn.w &&
+                click.y >= restartBtn.y && 
+                click.y <= restartBtn.y + restartBtn.h) {
+                
+                // SOLO SI TOCÓ EL BOTÓN: Reiniciamos
+                bird.speed = 0;
+                pipes.reset();
+                pipesPassed = 0;
+                displayScore = "0%"; 
+                pipes.totalSpawned = 0;
+                state.current = state.getReady;
+            }
+            // Si tocó fuera, no pasa nada (break)
             break;
     }
 }
 
-window.addEventListener("keydown", (e) => { if(e.code === "Space" || e.code === "ArrowUp") action(e); });
+// Event Listeners
+window.addEventListener("keydown", (e) => { 
+    if(e.code === "Space" || e.code === "ArrowUp") {
+        // La barra espaciadora siempre sirve (opcional, si quieres quitarla borra esto)
+        if(state.current !== state.game && state.current !== state.getReady) {
+             // Forzamos reinicio con espacio
+             bird.speed = 0; pipes.reset(); pipesPassed = 0; displayScore = "0%"; pipes.totalSpawned = 0; state.current = state.getReady;
+        } else {
+             action(e);
+        }
+    }
+});
 window.addEventListener("mousedown", action);
 window.addEventListener("touchstart", action, {passive: false});
 

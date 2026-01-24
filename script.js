@@ -45,9 +45,12 @@ const bg = {
 const bird = {
     x: canvas.width / 3, 
     y: canvas.height / 2,
-    w: 220, 
-    h: 220, 
+    
+    // TAMAÑO
+    w: 180, 
+    h: 180, 
     radius: 25, 
+    
     speed: 0,
     gravity: 0.4,  
     jump: -8,      
@@ -70,8 +73,10 @@ const bird = {
         }
         ctx.rotate(this.rotation);
         
-        // Dibujamos siempre a la guerrera
-        ctx.drawImage(sprites.bird, -this.w/2, -this.h/2, this.w, this.h);
+        // Dibujamos a la guerrera
+        if(state.current !== state.getReady) {
+            ctx.drawImage(sprites.bird, -this.w/2, -this.h/2, this.w, this.h);
+        }
         
         if (DEBUG) {
             ctx.beginPath();
@@ -93,8 +98,7 @@ const bird = {
         }
 
         if(state.current == state.getReady) {
-            // En el inicio, flota suavemente en el centro
-            this.y = canvas.height / 2 + 10 * Math.cos(frames/20);
+            this.y = canvas.height / 2;
             this.rotation = 0;
         } else {
             this.speed += this.gravity;
@@ -204,15 +208,43 @@ const pipes = {
     totalSpawned: 0
 }
 
+// --- FUNCIÓN PARA DIBUJAR EL RECUADRO (Panel) ---
+function drawPanel(height) {
+    const w = canvas.width * 0.85; // 85% del ancho de pantalla
+    const h = height || 400; // Altura variable
+    const x = (canvas.width - w) / 2;
+    const y = (canvas.height - h) / 2;
+    
+    // 1. Sombra del recuadro
+    ctx.fillStyle = "rgba(0, 0, 0, 0.5)";
+    ctx.fillRect(0, 0, canvas.width, canvas.height); // Fondo pantalla oscurecido
+
+    // 2. Fondo del recuadro (Negro solido)
+    ctx.fillStyle = "#111"; 
+    ctx.fillRect(x, y, w, h);
+    
+    // 3. Borde Dorado
+    ctx.strokeStyle = "#FFD700"; // Dorado
+    ctx.lineWidth = 8;
+    ctx.strokeRect(x, y, w, h);
+    
+    // 4. Borde fino interior (detalle estético)
+    ctx.strokeStyle = "#FFF";
+    ctx.lineWidth = 2;
+    ctx.strokeRect(x + 10, y + 10, w - 20, h - 20);
+
+    return { x, y, w, h }; // Retornamos coordenadas por si las necesitamos
+}
+
 const ui = {
     draw: function() {
         ctx.fillStyle = "#FFF";
         ctx.strokeStyle = "#000";
         ctx.textAlign = "center";
-        ctx.lineWidth = 5; 
         
         // --- PUNTUACIÓN EN JUEGO ---
-        if(state.current == state.game || state.current == state.win) {
+        if(state.current == state.game) {
+            ctx.lineWidth = 5; 
             ctx.font = "900 120px 'Cinzel Decorative', serif";
             ctx.fillStyle = "#FFD700"; 
             ctx.shadowColor = "rgba(0,0,0,0.8)";
@@ -223,65 +255,74 @@ const ui = {
             ctx.fillStyle = "#FFF"; 
         }
 
-        // --- PANTALLA INICIO (LIMPIA Y ÉPICA) ---
+        // --- PANTALLA INICIO (RECUADRO) ---
         if(state.current == state.getReady) {
-            // Título Principal
-            ctx.fillStyle = "#f1c40f"; // Dorado Espartano
-            ctx.font = "900 110px 'Cinzel Decorative', serif";
-            ctx.shadowColor = "rgba(0,0,0,1)";
-            ctx.shadowBlur = 25;
-            ctx.strokeText("SPARTAN", canvas.width/2, canvas.height/2 - 120);
-            ctx.fillText("SPARTAN", canvas.width/2, canvas.height/2 - 120);
-            
-            // Subtítulo
-            ctx.shadowBlur = 0;
-            ctx.fillStyle = "#FFF";
-            ctx.font = "700 45px 'Cinzel', serif";
-            // Dibujamos un borde negro fino al texto pequeño para que se lea mejor sobre el fondo
-            ctx.lineWidth = 3; 
-            ctx.strokeText("TOCA PARA EMPEZAR", canvas.width/2, canvas.height/2 - 40);
-            ctx.fillText("TOCA PARA EMPEZAR", canvas.width/2, canvas.height/2 - 40);
-        } 
-        // --- PANTALLA GAME OVER ---
-        else if(state.current == state.over) {
-            ctx.fillStyle = "#e74c3c"; 
+            const panel = drawPanel(400); // Dibujamos recuadro de 400px alto
+            const centerY = canvas.height / 2;
+
+            // Título
+            ctx.fillStyle = "#f1c40f"; 
             ctx.font = "900 100px 'Cinzel Decorative', serif";
             ctx.shadowColor = "rgba(0,0,0,1)";
             ctx.shadowBlur = 20;
-            ctx.strokeText("GAME OVER", canvas.width/2, canvas.height/2 - 50);
-            ctx.fillText("GAME OVER", canvas.width/2, canvas.height/2 - 50);
+            ctx.fillText("SPARTAN", canvas.width/2, centerY - 50);
             ctx.shadowBlur = 0;
             
-            ctx.font = "700 50px 'Cinzel', serif";
-            ctx.fillStyle = "#FFD700";
-            ctx.fillText("Progreso: " + displayScore, canvas.width/2, canvas.height/2 + 50);
-
+            // Subtítulo
             ctx.fillStyle = "#FFF";
             ctx.font = "700 40px 'Cinzel', serif";
-            ctx.strokeText("Toca para reiniciar", canvas.width/2, canvas.height/2 + 150);
-            ctx.fillText("Toca para reiniciar", canvas.width/2, canvas.height/2 + 150);
-        }
-        // --- PANTALLA VICTORIA ---
-        else if(state.current == state.win) {
-            if(sprites.owl.complete && sprites.owl.naturalHeight !== 0) {
-                const owlSize = 300; 
-                ctx.drawImage(sprites.owl, canvas.width/2 - owlSize/2, canvas.height/2 - 350, owlSize, owlSize);
-            }
+            ctx.fillText("TOCA PARA EMPEZAR", canvas.width/2, centerY + 80);
+        } 
+        
+        // --- PANTALLA GAME OVER (RECUADRO) ---
+        else if(state.current == state.over) {
+            const panel = drawPanel(500); // Recuadro más alto
+            const centerY = canvas.height / 2;
 
-            ctx.fillStyle = "#FFD700"; 
-            ctx.font = "900 110px 'Cinzel Decorative', serif";
-            ctx.shadowColor = "rgba(0,0,0,1)";
-            ctx.shadowBlur = 25;
-            ctx.strokeText("¡VICTORIA!", canvas.width/2, canvas.height/2 + 80);
-            ctx.fillText("¡VICTORIA!", canvas.width/2, canvas.height/2 + 80);
+            // Título Rojo
+            ctx.fillStyle = "#e74c3c"; 
+            ctx.font = "900 90px 'Cinzel Decorative', serif";
+            ctx.shadowBlur = 20;
+            ctx.fillText("GAME OVER", canvas.width/2, centerY - 100);
             ctx.shadowBlur = 0;
             
+            // Bono
+            ctx.fillStyle = "#FFD700";
+            ctx.font = "700 50px 'Cinzel', serif";
+            ctx.fillText("BONO: " + displayScore, canvas.width/2, centerY + 20);
+
+            // Mensaje
             ctx.fillStyle = "#FFF";
-            ctx.font = "700 45px 'Cinzel', serif";
-            ctx.strokeText("Misión Cumplida", canvas.width/2, canvas.height/2 + 160);
-            ctx.fillText("Misión Cumplida", canvas.width/2, canvas.height/2 + 160);
             ctx.font = "700 35px 'Cinzel', serif";
-            ctx.fillText("Click para jugar de nuevo", canvas.width/2, canvas.height/2 + 230);
+            ctx.fillText("INTENTA DE NUEVO", canvas.width/2, centerY + 120);
+        }
+        
+        // --- PANTALLA VICTORIA (RECUADRO) ---
+        else if(state.current == state.win) {
+            const panel = drawPanel(600); // Recuadro muy alto para que quepa el búho
+            const centerY = canvas.height / 2;
+
+            // Búho (Encima del recuadro o dentro)
+            if(sprites.owl.complete && sprites.owl.naturalHeight !== 0) {
+                const owlSize = 250; 
+                // Lo dibujamos un poco arriba del centro
+                ctx.drawImage(sprites.owl, canvas.width/2 - owlSize/2, centerY - 320, owlSize, owlSize);
+            }
+
+            // Título
+            ctx.fillStyle = "#FFD700"; 
+            ctx.font = "900 100px 'Cinzel Decorative', serif";
+            ctx.shadowBlur = 25;
+            ctx.fillText("VICTORIA", canvas.width/2, centerY + 20);
+            ctx.shadowBlur = 0;
+            
+            // Bono
+            ctx.fillStyle = "#FFF";
+            ctx.font = "700 50px 'Cinzel', serif";
+            ctx.fillText("BONO: " + displayScore, canvas.width/2, centerY + 100);
+
+            ctx.font = "700 30px 'Cinzel', serif";
+            ctx.fillText("Click para jugar de nuevo", canvas.width/2, centerY + 180);
         }
     }
 }

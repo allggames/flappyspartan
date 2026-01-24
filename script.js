@@ -107,7 +107,7 @@ const pipes = {
     
     // NUEVO: Recorte Vertical
     // Aumenta este número si el rojo se mete mucho en el hueco
-    columnaPadding: 150, 
+    columnaPadding: 170, 
     
     floorHeight: 50, 
     

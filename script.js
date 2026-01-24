@@ -39,7 +39,6 @@ const bird = {
     y: canvas.height / 2,
     w: 180, 
     h: 180, 
-    // Radio de colisión (el círculo rojo)
     radius: 25, 
     speed: 0,
     gravity: 0.8,
@@ -61,7 +60,6 @@ const bird = {
         
         ctx.drawImage(sprites.bird, -this.w/2, -this.h/2, this.w, this.h);
         
-        // DIBUJAR CÍRCULO ROJO
         if (DEBUG) {
             ctx.beginPath();
             ctx.arc(0, 0, this.radius, 0, Math.PI*2);
@@ -85,6 +83,7 @@ const bird = {
             this.speed += this.gravity;
             this.y += this.speed;
             
+            // Suelo (50px desde abajo)
             if(this.y + this.h/2 >= canvas.height - 50) {
                 this.y = canvas.height - 50 - this.h/2;
                 if(state.current == state.game) state.current = state.over;
@@ -103,12 +102,11 @@ const pipes = {
     h: 1000,  
     dx: 7,    
     gap: 390,
-    
-    // --- NUEVO: MARGEN DE COLISIÓN ---
-    // Esto define cuántos píxeles recortamos de cada lado (izquierda y derecha)
-    // Si el rojo sigue sobresaliendo, AUMENTA este número.
-    // Si el rojo queda muy adentro, REDUCE este número.
     hitMargin: 35, 
+    
+    // Altura del suelo (Arena)
+    // Esto evita que el rojo siga hacia abajo
+    floorHeight: 50, 
     
     draw: function() {
         if (!sprites.pipe.complete) return;
@@ -118,7 +116,7 @@ const pipes = {
             let topY = p.y; 
             let bottomY = p.y + this.gap;
             
-            // DIBUJO DE COLUMNAS (Imagen completa)
+            // DIBUJO DE COLUMNAS
             ctx.save();
             ctx.translate(p.x, topY);
             ctx.scale(1, -1);
@@ -126,19 +124,21 @@ const pipes = {
             ctx.restore();
             ctx.drawImage(sprites.pipe, p.x, bottomY, this.w, this.h);
 
-            // DIBUJAR CAJAS ROJAS (Ajustadas al margen)
+            // DIBUJAR CAJAS ROJAS
             if (DEBUG) {
                 ctx.strokeStyle = "red";
                 ctx.lineWidth = 3;
                 
-                // Calculamos la posición y ancho ajustados
                 let hitX = p.x + this.hitMargin;
                 let hitW = this.w - (this.hitMargin * 2);
                 
-                // Caja Arriba
+                // Caja Arriba (Hasta el techo 0)
                 ctx.strokeRect(hitX, 0, hitW, topY); 
-                // Caja Abajo
-                ctx.strokeRect(hitX, bottomY, hitW, canvas.height - bottomY);
+                
+                // --- CAMBIO AQUÍ: Caja Abajo (Hasta el suelo) ---
+                // Calculamos la altura restando el suelo
+                let heightToFloor = (canvas.height - this.floorHeight) - bottomY;
+                ctx.strokeRect(hitX, bottomY, hitW, heightToFloor);
             }
         }
     },
@@ -157,14 +157,14 @@ const pipes = {
             let p = this.position[i];
             p.x -= this.dx;
             
-            // --- COLISIONES AJUSTADAS AL MARGEN ---
-            // Usamos las mismas medidas que en el dibujo rojo
+            // COLISIONES
             let hitX = p.x + this.hitMargin;
             let hitW = this.w - (this.hitMargin * 2);
             let bottomPipeYPos = p.y + this.gap;
             
             // Lógica de choque
             if(bird.x + bird.radius > hitX && bird.x - bird.radius < hitX + hitW) {
+                // Verificamos colisión arriba O abajo (considerando el suelo)
                 if(bird.y - bird.radius < p.y || bird.y + bird.radius > bottomPipeYPos) {
                      state.current = state.over;
                 }

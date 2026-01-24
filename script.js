@@ -45,8 +45,8 @@ const bg = {
 const bird = {
     x: canvas.width / 3, 
     y: canvas.height / 2,
-    w: 180, 
-    h: 180, 
+    w: 220, 
+    h: 220, 
     radius: 25, 
     speed: 0,
     gravity: 0.4,  

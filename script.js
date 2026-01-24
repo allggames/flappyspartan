@@ -6,8 +6,8 @@ let frames = 0;
 const RAD = Math.PI / 180;
 const state = { current: 0, getReady: 0, game: 1, over: 2 };
 
-// ¿Quieres ver las cajas de colisión? true = SÍ, false = NO
-// Cuando termines de probar, cambia esto a false
+// MODO DEBUG: true para ver las cajas rojas.
+// Cuando el juego se sienta bien, cámbialo a false.
 const DEBUG = true; 
 
 // --- CARGA DE IMÁGENES ---
@@ -38,12 +38,13 @@ const bg = {
 const bird = {
     x: canvas.width / 3, 
     y: canvas.height / 2,
+    // Tamaño visual (dibujo grande)
     w: 180, 
     h: 180, 
-    // --- EL ARREGLO ESTÁ AQUÍ ---
-    // Antes era 60. Ahora es 35.
-    // Esto hace que el cuerpo "sólido" sea mucho más pequeño que el dibujo.
-    radius: 35, 
+    // --- CAMBIO CLAVE: Radio de colisión MUY pequeño ---
+    // Antes era 35. Ahora es 25.
+    // Esto significa que solo mueres si el CENTRO de la guerrera toca algo.
+    radius: 25, 
     speed: 0,
     gravity: 0.8,
     jump: -15, 
@@ -64,11 +65,11 @@ const bird = {
         
         ctx.drawImage(sprites.bird, -this.w/2, -this.h/2, this.w, this.h);
         
-        // MODO DEBUG: Dibuja el círculo de colisión
+        // DIBUJAR CÍRCULO ROJO (Para que veas el nuevo tamaño)
         if (DEBUG) {
             ctx.beginPath();
             ctx.arc(0, 0, this.radius, 0, Math.PI*2);
-            ctx.strokeStyle = "red";
+            ctx.strokeStyle = "red"; // Color rojo
             ctx.lineWidth = 3;
             ctx.stroke();
         }
@@ -105,7 +106,7 @@ const pipes = {
     w: 160,   
     h: 1000,  
     dx: 7,    
-    gap: 380, 
+    gap: 390, // Hueco un poco más grande
     
     draw: function() {
         if (!sprites.pipe.complete) return;
@@ -115,26 +116,28 @@ const pipes = {
             let topY = p.y; 
             let bottomY = p.y + this.gap;
             
-            // Arriba
+            // DIBUJAR COLUMNAS (Visual)
             ctx.save();
             ctx.translate(p.x, topY);
             ctx.scale(1, -1);
             ctx.drawImage(sprites.pipe, 0, 0, this.w, this.h);
             ctx.restore();
             
-            // Abajo
             ctx.drawImage(sprites.pipe, p.x, bottomY, this.w, this.h);
 
-            // MODO DEBUG: Dibuja las cajas de las columnas
+            // DIBUJAR CAJAS ROJAS (Lógica)
             if (DEBUG) {
                 ctx.strokeStyle = "red";
                 ctx.lineWidth = 3;
                 
-                // Caja Arriba (ajustada para ser permisiva)
-                // Le damos 30px de margen a los lados para que no sea tan estricto
-                let hitX = p.x + 30;
-                let hitW = this.w - 60;
+                // --- CAMBIO CLAVE: Margen Gigante ---
+                // "hitMargin = 45" significa que la caja roja es 45px 
+                // más delgada que la columna por cada lado.
+                let hitMargin = 45; 
+                let hitX = p.x + hitMargin;
+                let hitW = this.w - (hitMargin * 2);
                 
+                // Caja Arriba
                 ctx.strokeRect(hitX, 0, hitW, topY); 
                 // Caja Abajo
                 ctx.strokeRect(hitX, bottomY, hitW, canvas.height - bottomY);
@@ -156,16 +159,15 @@ const pipes = {
             let p = this.position[i];
             p.x -= this.dx;
             
-            // --- COLISIONES MEJORADAS ---
-            // Hacemos la caja de la columna más angosta que el dibujo
-            // Así, si rozas el borde, no mueres.
-            let hitMargin = 30; // Margen de perdón
+            // --- COLISIONES PERMISIVAS ---
+            // Usamos el mismo margen que en el dibujo rojo
+            let hitMargin = 45; 
             let hitX = p.x + hitMargin;
             let hitW = this.w - (hitMargin * 2);
             let bottomPipeYPos = p.y + this.gap;
             
-            // Lógica de choque
-            // 1. ¿El pájaro está horizontalmente dentro de la zona peligrosa?
+            // Lógica:
+            // 1. ¿El CENTRO del pájaro (radio) entra en la caja roja horizontal?
             if(bird.x + bird.radius > hitX && bird.x - bird.radius < hitX + hitW) {
                 // 2. ¿Toca el techo O toca el suelo?
                 if(bird.y - bird.radius < p.y || bird.y + bird.radius > bottomPipeYPos) {

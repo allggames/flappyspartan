@@ -26,7 +26,7 @@ sprites.owl.src = "buho.png";
 
 // --- VARIABLES DE JUEGO ---
 let pipesPassed = 0; 
-let displayScore = "0%"; // Ahora el puntaje es texto (porcentaje)
+let displayScore = "0%"; 
 
 // --- OBJETOS ---
 
@@ -49,11 +49,8 @@ const bird = {
     h: 180, 
     radius: 25, 
     speed: 0,
-    
-    // Físicas suaves
     gravity: 0.4,  
     jump: -8,      
-    
     rotation: 0,
     
     draw: function() {
@@ -170,7 +167,6 @@ const pipes = {
             let p = this.position[i];
             p.x -= this.dx;
             
-            // Colisiones
             let hitX = p.x + this.hitMargin;
             let hitW = this.w - (this.hitMargin * 2);
             let techo = p.y - this.columnaPadding;
@@ -182,18 +178,16 @@ const pipes = {
                 }
             }
             
-            // --- LÓGICA DE PORCENTAJE ---
             if(p.x + this.w < bird.x && !p.passed) {
                 pipesPassed += 1;
                 p.passed = true;
                 
-                // Actualizamos el "displayScore" SOLO en los hitos
                 if(pipesPassed === 3) displayScore = "50%";
                 else if(pipesPassed === 6) displayScore = "100%";
                 else if(pipesPassed === 9) displayScore = "150%";
                 else if(pipesPassed === 12) {
                     displayScore = "200%";
-                    state.current = state.win; // GANASTE
+                    state.current = state.win; 
                 }
             }
             
@@ -215,61 +209,78 @@ const ui = {
         ctx.fillStyle = "#FFF";
         ctx.strokeStyle = "#000";
         ctx.textAlign = "center";
+        // Grosor del borde de las letras
+        ctx.lineWidth = 5; 
         
-        // MOSTRAR SOLO EL PORCENTAJE
+        // --- PUNTUACIÓN (Porcentaje durante el juego) ---
         if(state.current == state.game || state.current == state.win) {
-            ctx.lineWidth = 4;
-            // Usamos una fuente dorada o llamativa para el %
-            ctx.font = "80px Georgia";
+            // Usamos la fuente más decorativa y GRUESA (peso 900)
+            ctx.font = "900 120px 'Cinzel Decorative', serif";
             ctx.fillStyle = "#FFD700"; // Dorado
-            ctx.strokeText(displayScore, canvas.width/2, 120);
-            ctx.fillText(displayScore, canvas.width/2, 120);
-            ctx.fillStyle = "#FFF"; // Volver a blanco
+            // Sombra para darle relieve 3D
+            ctx.shadowColor = "rgba(0,0,0,0.8)";
+            ctx.shadowBlur = 15;
+            ctx.strokeText(displayScore, canvas.width/2, 150);
+            ctx.fillText(displayScore, canvas.width/2, 150);
+            // Quitamos sombra para el resto
+            ctx.shadowBlur = 0; 
+            ctx.fillStyle = "#FFF"; 
         }
 
+        // --- PANTALLA INICIO ---
         if(state.current == state.getReady) {
             ctx.fillStyle = "#f1c40f";
-            ctx.font = "90px Georgia";
+            // Título principal: Grueso y decorativo
+            ctx.font = "900 110px 'Cinzel Decorative', serif";
+            ctx.shadowColor = "rgba(0,0,0,1)";
+            ctx.shadowBlur = 20;
             ctx.strokeText("SPARTAN", canvas.width/2, canvas.height/2 - 100);
             ctx.fillText("SPARTAN", canvas.width/2, canvas.height/2 - 100);
+            ctx.shadowBlur = 0;
+
             ctx.fillStyle = "#FFF";
-            ctx.font = "40px Verdana";
-            ctx.fillText("Tap to Start", canvas.width/2, canvas.height/2 + 50);
+            // Subtítulo: Más limpio, pero en negrita (peso 700)
+            ctx.font = "700 45px 'Cinzel', serif";
+            ctx.fillText("Toca para empezar", canvas.width/2, canvas.height/2 + 50);
         } 
+        // --- PANTALLA GAME OVER ---
         else if(state.current == state.over) {
-            ctx.fillStyle = "#e74c3c";
-            ctx.font = "80px Georgia";
+            ctx.fillStyle = "#e74c3c"; // Rojo
+            ctx.font = "900 100px 'Cinzel Decorative', serif";
+            ctx.shadowColor = "rgba(0,0,0,1)";
+            ctx.shadowBlur = 20;
             ctx.strokeText("GAME OVER", canvas.width/2, canvas.height/2 - 50);
             ctx.fillText("GAME OVER", canvas.width/2, canvas.height/2 - 50);
+            ctx.shadowBlur = 0;
             
-            // Mostrar progreso alcanzado
-            ctx.font = "50px Verdana";
-            ctx.fillStyle = "#FFF";
-            ctx.strokeText("Progreso: " + displayScore, canvas.width/2, canvas.height/2 + 30);
-            ctx.fillText("Progreso: " + displayScore, canvas.width/2, canvas.height/2 + 30);
+            ctx.font = "700 50px 'Cinzel', serif";
+            ctx.fillStyle = "#FFD700";
+            ctx.fillText("Progreso: " + displayScore, canvas.width/2, canvas.height/2 + 50);
 
-            ctx.font = "40px Verdana";
-            ctx.fillText("Tap to Restart", canvas.width/2, canvas.height/2 + 120);
+            ctx.fillStyle = "#FFF";
+            ctx.font = "700 40px 'Cinzel', serif";
+            ctx.fillText("Toca para reiniciar", canvas.width/2, canvas.height/2 + 150);
         }
+        // --- PANTALLA VICTORIA ---
         else if(state.current == state.win) {
             if(sprites.owl.complete && sprites.owl.naturalHeight !== 0) {
                 const owlSize = 300; 
-                ctx.drawImage(sprites.owl, canvas.width/2 - owlSize/2, canvas.height/2 - 300, owlSize, owlSize);
-            } else {
-                ctx.fillStyle = "gold";
-                ctx.fillRect(canvas.width/2 - 50, canvas.height/2 - 200, 100, 100);
+                ctx.drawImage(sprites.owl, canvas.width/2 - owlSize/2, canvas.height/2 - 350, owlSize, owlSize);
             }
 
             ctx.fillStyle = "#FFD700"; 
-            ctx.font = "80px Georgia";
+            ctx.font = "900 110px 'Cinzel Decorative', serif";
+            ctx.shadowColor = "rgba(0,0,0,1)";
+            ctx.shadowBlur = 25;
             ctx.strokeText("¡VICTORIA!", canvas.width/2, canvas.height/2 + 80);
             ctx.fillText("¡VICTORIA!", canvas.width/2, canvas.height/2 + 80);
+            ctx.shadowBlur = 0;
             
             ctx.fillStyle = "#FFF";
-            ctx.font = "40px Verdana";
-            ctx.fillText("Bono Máximo Alcanzado", canvas.width/2, canvas.height/2 + 150);
-            ctx.font = "30px Verdana";
-            ctx.fillText("Click para jugar de nuevo", canvas.width/2, canvas.height/2 + 220);
+            ctx.font = "700 45px 'Cinzel', serif";
+            ctx.fillText("Misión Cumplida", canvas.width/2, canvas.height/2 + 160);
+            ctx.font = "700 35px 'Cinzel', serif";
+            ctx.fillText("Click para jugar de nuevo", canvas.width/2, canvas.height/2 + 230);
         }
     }
 }
@@ -289,7 +300,7 @@ function action(evt) {
             bird.speed = 0;
             pipes.reset();
             pipesPassed = 0;
-            displayScore = "0%"; // Reiniciar porcentaje
+            displayScore = "0%"; 
             pipes.totalSpawned = 0;
             state.current = state.getReady;
             break;
@@ -297,7 +308,7 @@ function action(evt) {
             bird.speed = 0;
             pipes.reset();
             pipesPassed = 0;
-            displayScore = "0%"; // Reiniciar porcentaje
+            displayScore = "0%"; 
             pipes.totalSpawned = 0;
             state.current = state.getReady;
             break;

@@ -1,10 +1,14 @@
 const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
 
-// --- VARIABLES ---
+// --- CONFIGURACIÓN ---
 let frames = 0;
 const RAD = Math.PI / 180;
 const state = { current: 0, getReady: 0, game: 1, over: 2 };
+
+// ¿Quieres ver las cajas de colisión? true = SÍ, false = NO
+// Cuando termines de probar, cambia esto a false
+const DEBUG = false; 
 
 // --- CARGA DE IMÁGENES ---
 const sprites = {
@@ -13,11 +17,9 @@ const sprites = {
     bg: new Image()
 };
 
-// POR FAVOR: Usa la versión PNG transparente de la guerrera aquí
 sprites.bird.src = "guerrera.png"; 
 sprites.pipe.src = "columna.png";
-// Usa tu fondo complejo aquí (el del templo)
-sprites.bg.src = "fondo.png"; 
+sprites.bg.src = "fondo.png";
 
 // --- OBJETOS ---
 
@@ -26,29 +28,23 @@ const bg = {
         if (!sprites.bg.complete) {
              ctx.fillStyle = "#333"; ctx.fillRect(0,0,canvas.width, canvas.height); return;
         }
-        
-        // Técnica para dibujar el fondo tipo "COVER" (sin deformar)
-        // Calcula la escala necesaria para llenar el alto del canvas
         const scale = canvas.height / sprites.bg.height;
         const scaledWidth = sprites.bg.width * scale;
-        // Centra la imagen horizontalmente
         const xOffset = (canvas.width - scaledWidth) / 2;
-        
         ctx.drawImage(sprites.bg, xOffset, 0, scaledWidth, canvas.height);
     }
 }
 
 const bird = {
-    x: canvas.width / 3, // Posición horizontal
+    x: canvas.width / 3, 
     y: canvas.height / 2,
-    // --- TAMAÑO ÉPICO ---
-    // Hacemos al personaje MUY grande para que se vea como en la foto
     w: 180, 
     h: 180, 
-    // Hitbox (radio de colisión) más pequeño que la imagen para ser justo
-    radius: 60, 
+    // --- EL ARREGLO ESTÁ AQUÍ ---
+    // Antes era 60. Ahora es 35.
+    // Esto hace que el cuerpo "sólido" sea mucho más pequeño que el dibujo.
+    radius: 35, 
     speed: 0,
-    // Físicas ajustadas para este tamaño grande y resolución HD
     gravity: 0.8,
     jump: -15, 
     rotation: 0,
@@ -59,7 +55,6 @@ const bird = {
         ctx.save();
         ctx.translate(this.x, this.y);
         
-        // Rotación más sutil y realista
         if (this.speed >= this.jump) {
             this.rotation = Math.min(Math.PI / 8, this.rotation + 1 * RAD);
         } else {
@@ -67,9 +62,17 @@ const bird = {
         }
         ctx.rotate(this.rotation);
         
-        // Dibujar la guerrera
-        // Si usas el PNG transparente, ¡aquí es donde se verá increíble!
         ctx.drawImage(sprites.bird, -this.w/2, -this.h/2, this.w, this.h);
+        
+        // MODO DEBUG: Dibuja el círculo de colisión
+        if (DEBUG) {
+            ctx.beginPath();
+            ctx.arc(0, 0, this.radius, 0, Math.PI*2);
+            ctx.strokeStyle = "red";
+            ctx.lineWidth = 3;
+            ctx.stroke();
+        }
+        
         ctx.restore();
     },
     
@@ -85,12 +88,10 @@ const bird = {
             this.speed += this.gravity;
             this.y += this.speed;
             
-            // Límite inferior (suelo)
             if(this.y + this.h/2 >= canvas.height - 50) {
                 this.y = canvas.height - 50 - this.h/2;
                 if(state.current == state.game) state.current = state.over;
             }
-            // Límite superior (techo)
             if(this.y - this.h/2 <= 0) {
                 this.y = this.h/2;
                 this.speed = 0;
@@ -101,10 +102,10 @@ const bird = {
 
 const pipes = {
     position: [],
-    w: 160,   // Columnas muy gruesas e imponentes
-    h: 1000,  // Altura visual de la columna
-    dx: 7,    // Velocidad rápida
-    gap: 380, // Hueco muy grande para que pase el personaje gigante
+    w: 160,   
+    h: 1000,  
+    dx: 7,    
+    gap: 380, 
     
     draw: function() {
         if (!sprites.pipe.complete) return;
@@ -114,26 +115,39 @@ const pipes = {
             let topY = p.y; 
             let bottomY = p.y + this.gap;
             
-            // Columna de Arriba (Espejo vertical)
+            // Arriba
             ctx.save();
             ctx.translate(p.x, topY);
             ctx.scale(1, -1);
             ctx.drawImage(sprites.pipe, 0, 0, this.w, this.h);
             ctx.restore();
             
-            // Columna de Abajo (Normal)
+            // Abajo
             ctx.drawImage(sprites.pipe, p.x, bottomY, this.w, this.h);
+
+            // MODO DEBUG: Dibuja las cajas de las columnas
+            if (DEBUG) {
+                ctx.strokeStyle = "red";
+                ctx.lineWidth = 3;
+                
+                // Caja Arriba (ajustada para ser permisiva)
+                // Le damos 30px de margen a los lados para que no sea tan estricto
+                let hitX = p.x + 30;
+                let hitW = this.w - 60;
+                
+                ctx.strokeRect(hitX, 0, hitW, topY); 
+                // Caja Abajo
+                ctx.strokeRect(hitX, bottomY, hitW, canvas.height - bottomY);
+            }
         }
     },
     
     update: function() {
         if(state.current !== state.game) return;
         
-        // Generar columnas cada 110 frames
         if(frames % 110 == 0) {
             this.position.push({
                 x: canvas.width,
-                // Rango de altura aleatoria para el hueco
                 y: Math.random() * (canvas.height - 700) + 200
             });
         }
@@ -142,16 +156,18 @@ const pipes = {
             let p = this.position[i];
             p.x -= this.dx;
             
-            // --- COLISIONES ---
-            // Hitbox horizontal un poco más permisivo
-            let hitX = p.x + 20;
-            let hitW = this.w - 40;
+            // --- COLISIONES MEJORADAS ---
+            // Hacemos la caja de la columna más angosta que el dibujo
+            // Así, si rozas el borde, no mueres.
+            let hitMargin = 30; // Margen de perdón
+            let hitX = p.x + hitMargin;
+            let hitW = this.w - (hitMargin * 2);
             let bottomPipeYPos = p.y + this.gap;
             
-            // Comprobación circular vs rectangular (más precisa para este tamaño)
-            // Simplificación: si el centro del pájaro entra en la zona X de la tubería
-            if(bird.x > hitX && bird.x < hitX + hitW) {
-                // Y si el borde superior o inferior del pájaro toca las tuberías
+            // Lógica de choque
+            // 1. ¿El pájaro está horizontalmente dentro de la zona peligrosa?
+            if(bird.x + bird.radius > hitX && bird.x - bird.radius < hitX + hitW) {
+                // 2. ¿Toca el techo O toca el suelo?
                 if(bird.y - bird.radius < p.y || bird.y + bird.radius > bottomPipeYPos) {
                      state.current = state.over;
                 }
@@ -180,7 +196,7 @@ const score = {
         ctx.lineWidth = 4;
         
         if(state.current == state.game) {
-            ctx.font = "100px Georgia, serif"; // Fuente más clásica
+            ctx.font = "100px Georgia, serif";
             ctx.strokeText(this.value, canvas.width/2, 150);
             ctx.fillText(this.value, canvas.width/2, 150);
         } else if(state.current == state.over) {
@@ -197,7 +213,7 @@ const score = {
             ctx.font = "40px Verdana";
             ctx.fillText("Tap to restart", canvas.width/2, canvas.height/2 + 150);
         } else if(state.current == state.getReady) {
-            ctx.fillStyle = "#f1c40f"; // Dorado
+            ctx.fillStyle = "#f1c40f";
             ctx.font = "90px Georgia, serif";
             ctx.strokeText("SPARTAN", canvas.width/2, canvas.height/2 - 100);
             ctx.fillText("SPARTAN", canvas.width/2, canvas.height/2 - 100);
@@ -228,28 +244,18 @@ window.addEventListener("keydown", (e) => { if(e.code === "Space" || e.code === 
 window.addEventListener("mousedown", action);
 window.addEventListener("touchstart", action, {passive: false});
 
-// --- INICIO ROBUSTO ---
-// Esperamos a que carguen las imágenes esenciales antes de arrancar el bucle
+// --- INICIO ---
 let assetsLoaded = 0;
 function checkAssets() {
     assetsLoaded++;
-    if(assetsLoaded === 3) {
-        console.log("Assets loaded. Starting game.");
-        loop();
-    }
+    if(assetsLoaded === 3) loop();
 }
 
 sprites.bird.onload = checkAssets;
 sprites.pipe.onload = checkAssets;
 sprites.bg.onload = checkAssets;
 
-// Fallback de seguridad: si algo falla al cargar, inicia igual después de 2 segundos
-setTimeout(() => {
-    if (assetsLoaded < 3) {
-        console.warn("Some assets failed to load. Starting anyway.");
-        loop();
-    }
-}, 2000);
+setTimeout(() => { if (assetsLoaded < 3) loop(); }, 1000);
 
 function loop() {
     bg.draw();

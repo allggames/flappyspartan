@@ -17,16 +17,16 @@ const sprites = {
     pipe: new Image(),
     bg: new Image(),
     owl: new Image(),
-    // --- NUEVA: TEXTURA PARA LOS PANELES ---
-    panelTexture: new Image() 
+    panelTexture: new Image() // La textura del recuadro
 };
 
 sprites.bird.src = "guerrera.png"; 
 sprites.pipe.src = "columna.png";
 sprites.bg.src = "fondo.png";
 sprites.owl.src = "buho.png"; 
-// --- ASEGÚRATE DE TENER ESTA IMAGEN ---
-sprites.panelTexture.src = "panel_bg.jpg"; 
+
+// --- ¡IMPORTANTE! RENOMBRA TU IMAGEN DE PIEDRA A "textura.jpg" ---
+sprites.panelTexture.src = "textura.jpg"; 
 
 // --- VARIABLES DE JUEGO ---
 let pipesPassed = 0; 
@@ -208,39 +208,36 @@ const pipes = {
     totalSpawned: 0
 }
 
-// --- FUNCIÓN PARA DIBUJAR EL RECUADRO CON TEXTURA ---
+// --- FUNCIÓN DE PANEL CON TEXTURA ---
 function drawPanel(height) {
     const w = canvas.width * 0.85; 
     const h = height || 400; 
     const x = (canvas.width - w) / 2;
     const y = (canvas.height - h) / 2;
     
-    // 1. Fondo oscurecido de la pantalla completa
+    // 1. Oscurecer la pantalla de fondo
     ctx.fillStyle = "rgba(0, 0, 0, 0.6)";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    // 2. DIBUJAR LA TEXTURA DEL PANEL
+    // 2. DIBUJAR LA TEXTURA (Si carga, si no, negro)
     if (sprites.panelTexture.complete && sprites.panelTexture.naturalWidth > 0) {
-        // Dibujamos la imagen estirada para que llene el recuadro
         ctx.drawImage(sprites.panelTexture, x, y, w, h);
     } else {
-        // Si falla la imagen, usamos negro como respaldo
-        ctx.fillStyle = "#111";
+        ctx.fillStyle = "#111"; // Fallback negro si falla la imagen
         ctx.fillRect(x, y, w, h);
     }
     
-    // 3. OSCURECER LA TEXTURA
-    // Dibujamos un rectángulo negro semitransparente encima de la textura
-    // Cambia el 0.5 (50% oscuridad) si lo quieres más o menos oscuro (ej. 0.3 o 0.7)
-    ctx.fillStyle = "rgba(0, 0, 0, 0.5)"; 
+    // 3. CAPA OSCURA ENCIMA (Para que el texto resalte)
+    // 0.3 es suave, deja ver la textura. 0.7 sería muy oscuro.
+    ctx.fillStyle = "rgba(0, 0, 0, 0.3)"; 
     ctx.fillRect(x, y, w, h);
 
-    // 4. Bordes Dorados
-    ctx.strokeStyle = "#FFD700"; // Dorado principal
+    // 4. BORDES
+    ctx.strokeStyle = "#FFD700"; 
     ctx.lineWidth = 8;
     ctx.strokeRect(x, y, w, h);
     
-    ctx.strokeStyle = "#C0A000"; // Dorado más oscuro para el borde fino interno
+    ctx.strokeStyle = "#C0A000"; 
     ctx.lineWidth = 3;
     ctx.strokeRect(x + 12, y + 12, w - 24, h - 24);
 
@@ -253,7 +250,7 @@ const ui = {
         ctx.strokeStyle = "#000";
         ctx.textAlign = "center";
         
-        // --- PUNTUACIÓN EN JUEGO ---
+        // JUEGO (Puntaje)
         if(state.current == state.game) {
             ctx.lineWidth = 5; 
             ctx.font = "900 120px 'Cinzel Decorative', serif";
@@ -266,48 +263,47 @@ const ui = {
             ctx.fillStyle = "#FFF"; 
         }
 
-        // --- PANTALLA INICIO ---
+        // INICIO
         if(state.current == state.getReady) {
             const panel = drawPanel(450); 
             const centerY = canvas.height / 2;
 
-            // Título
             ctx.fillStyle = "#f1c40f"; 
             ctx.font = "900 100px 'Cinzel Decorative', serif";
-            // Sombra dorada para resaltar sobre la textura oscura
-            ctx.shadowColor = "#DAA520"; 
-            ctx.shadowBlur = 30;
+            ctx.shadowColor = "#000"; 
+            ctx.shadowBlur = 20;
+            ctx.strokeText("SPARTAN", canvas.width/2, centerY - 50);
             ctx.fillText("SPARTAN", canvas.width/2, centerY - 50);
             ctx.shadowBlur = 0;
             
-            // Subtítulo
             ctx.fillStyle = "#FFF";
             ctx.font = "700 40px 'Cinzel', serif";
-            ctx.shadowColor = "#000";
-            ctx.shadowBlur = 10;
+            ctx.strokeText("TOCA PARA EMPEZAR", canvas.width/2, centerY + 80);
             ctx.fillText("TOCA PARA EMPEZAR", canvas.width/2, centerY + 80);
-            ctx.shadowBlur = 0;
         } 
         
-        // --- PANTALLA GAME OVER ---
+        // GAME OVER
         else if(state.current == state.over) {
             const panel = drawPanel(550);
             const centerY = canvas.height / 2;
 
             if (pipesPassed >= 3) {
-                // --- BIEN HECHO ---
+                // BIEN HECHO
                 ctx.fillStyle = "#FFD700"; 
                 ctx.font = "900 80px 'Cinzel Decorative', serif";
-                ctx.shadowColor = "#DAA520"; ctx.shadowBlur = 25;
+                ctx.shadowColor = "#000"; ctx.shadowBlur = 15;
+                ctx.strokeText("¡BIEN HECHO!", canvas.width/2, centerY - 100);
                 ctx.fillText("¡BIEN HECHO!", canvas.width/2, centerY - 100);
                 ctx.shadowBlur = 0;
 
                 ctx.fillStyle = "#FFF";
                 ctx.font = "700 45px 'Cinzel', serif";
+                ctx.strokeText("BONO OBTENIDO:", canvas.width/2, centerY + 10);
                 ctx.fillText("BONO OBTENIDO:", canvas.width/2, centerY + 10);
                 
                 ctx.fillStyle = "#FFD700";
                 ctx.font = "900 70px 'Cinzel Decorative', serif";
+                ctx.strokeText(displayScore, canvas.width/2, centerY + 90);
                 ctx.fillText(displayScore, canvas.width/2, centerY + 90);
 
                 ctx.fillStyle = "#FFF";
@@ -315,24 +311,26 @@ const ui = {
                 ctx.fillText("Toca para jugar de nuevo", canvas.width/2, centerY + 180);
 
             } else {
-                // --- GAME OVER ---
-                ctx.fillStyle = "#e74c3c"; // Rojo
+                // GAME OVER MALO
+                ctx.fillStyle = "#e74c3c"; 
                 ctx.font = "900 90px 'Cinzel Decorative', serif";
-                ctx.shadowColor = "#FF0000"; ctx.shadowBlur = 25;
+                ctx.shadowColor = "#000"; ctx.shadowBlur = 15;
+                ctx.strokeText("GAME OVER", canvas.width/2, centerY - 100);
                 ctx.fillText("GAME OVER", canvas.width/2, centerY - 100);
                 ctx.shadowBlur = 0;
                 
-                ctx.fillStyle = "#bbb"; // Gris claro
+                ctx.fillStyle = "#ccc"; 
                 ctx.font = "700 45px 'Cinzel', serif";
                 ctx.fillText("Sin Bono", canvas.width/2, centerY + 20);
 
                 ctx.fillStyle = "#FFF";
                 ctx.font = "700 35px 'Cinzel', serif";
+                ctx.strokeText("INTENTA DE NUEVO", canvas.width/2, centerY + 130);
                 ctx.fillText("INTENTA DE NUEVO", canvas.width/2, centerY + 130);
             }
         }
         
-        // --- PANTALLA VICTORIA ---
+        // VICTORIA
         else if(state.current == state.win) {
             const panel = drawPanel(650); 
             const centerY = canvas.height / 2;
@@ -344,12 +342,14 @@ const ui = {
 
             ctx.fillStyle = "#FFD700"; 
             ctx.font = "900 100px 'Cinzel Decorative', serif";
-            ctx.shadowColor = "#DAA520"; ctx.shadowBlur = 30;
+            ctx.shadowColor = "#000"; ctx.shadowBlur = 20;
+            ctx.strokeText("VICTORIA", canvas.width/2, centerY + 20);
             ctx.fillText("VICTORIA", canvas.width/2, centerY + 20);
             ctx.shadowBlur = 0;
             
             ctx.fillStyle = "#FFF";
             ctx.font = "700 45px 'Cinzel', serif";
+            ctx.strokeText("BONO TOTAL: " + displayScore, canvas.width/2, centerY + 110);
             ctx.fillText("BONO TOTAL: " + displayScore, canvas.width/2, centerY + 110);
 
             ctx.font = "700 30px 'Cinzel', serif";
@@ -410,6 +410,6 @@ sprites.bird.onload = checkLoad;
 sprites.pipe.onload = checkLoad;
 sprites.bg.onload = checkLoad;
 sprites.owl.onload = () => {}; 
-sprites.panelTexture.onload = () => {}; // Carga de la textura
+sprites.panelTexture.onload = () => {}; 
 
 setTimeout(() => { if(loaded < 3) loop(); }, 1000);

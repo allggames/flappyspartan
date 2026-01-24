@@ -7,7 +7,6 @@ const RAD = Math.PI / 180;
 const state = { current: 0, getReady: 0, game: 1, over: 2 };
 
 // MODO DEBUG: true para ver las cajas rojas.
-// Cuando el juego se sienta bien, cámbialo a false.
 const DEBUG = true; 
 
 // --- CARGA DE IMÁGENES ---
@@ -38,12 +37,9 @@ const bg = {
 const bird = {
     x: canvas.width / 3, 
     y: canvas.height / 2,
-    // Tamaño visual (dibujo grande)
     w: 180, 
     h: 180, 
-    // --- CAMBIO CLAVE: Radio de colisión MUY pequeño ---
-    // Antes era 35. Ahora es 25.
-    // Esto significa que solo mueres si el CENTRO de la guerrera toca algo.
+    // Radio de colisión (el círculo rojo)
     radius: 25, 
     speed: 0,
     gravity: 0.8,
@@ -65,11 +61,11 @@ const bird = {
         
         ctx.drawImage(sprites.bird, -this.w/2, -this.h/2, this.w, this.h);
         
-        // DIBUJAR CÍRCULO ROJO (Para que veas el nuevo tamaño)
+        // DIBUJAR CÍRCULO ROJO
         if (DEBUG) {
             ctx.beginPath();
             ctx.arc(0, 0, this.radius, 0, Math.PI*2);
-            ctx.strokeStyle = "red"; // Color rojo
+            ctx.strokeStyle = "red"; 
             ctx.lineWidth = 3;
             ctx.stroke();
         }
@@ -106,7 +102,7 @@ const pipes = {
     w: 160,   
     h: 1000,  
     dx: 7,    
-    gap: 390, // Hueco un poco más grande
+    gap: 390, 
     
     draw: function() {
         if (!sprites.pipe.complete) return;
@@ -116,7 +112,7 @@ const pipes = {
             let topY = p.y; 
             let bottomY = p.y + this.gap;
             
-            // DIBUJAR COLUMNAS (Visual)
+            // DIBUJO DE COLUMNAS
             ctx.save();
             ctx.translate(p.x, topY);
             ctx.scale(1, -1);
@@ -125,17 +121,15 @@ const pipes = {
             
             ctx.drawImage(sprites.pipe, p.x, bottomY, this.w, this.h);
 
-            // DIBUJAR CAJAS ROJAS (Lógica)
+            // DIBUJAR CAJAS ROJAS (Ajustadas a los bordes exactos)
             if (DEBUG) {
                 ctx.strokeStyle = "red";
                 ctx.lineWidth = 3;
                 
-                // --- CAMBIO CLAVE: Margen Gigante ---
-                // "hitMargin = 45" significa que la caja roja es 45px 
-                // más delgada que la columna por cada lado.
-                let hitMargin = 45; 
-                let hitX = p.x + hitMargin;
-                let hitW = this.w - (hitMargin * 2);
+                // --- CAMBIO: Margen eliminado ---
+                // Ahora la caja roja es exactamente del ancho de la columna
+                let hitX = p.x;
+                let hitW = this.w;
                 
                 // Caja Arriba
                 ctx.strokeRect(hitX, 0, hitW, topY); 
@@ -159,17 +153,14 @@ const pipes = {
             let p = this.position[i];
             p.x -= this.dx;
             
-            // --- COLISIONES PERMISIVAS ---
-            // Usamos el mismo margen que en el dibujo rojo
-            let hitMargin = 45; 
-            let hitX = p.x + hitMargin;
-            let hitW = this.w - (hitMargin * 2);
+            // --- COLISIONES EXACTAS ---
+            // Usamos las mismas medidas exactas que el dibujo
+            let hitX = p.x;
+            let hitW = this.w;
             let bottomPipeYPos = p.y + this.gap;
             
-            // Lógica:
-            // 1. ¿El CENTRO del pájaro (radio) entra en la caja roja horizontal?
+            // Lógica de choque
             if(bird.x + bird.radius > hitX && bird.x - bird.radius < hitX + hitW) {
-                // 2. ¿Toca el techo O toca el suelo?
                 if(bird.y - bird.radius < p.y || bird.y + bird.radius > bottomPipeYPos) {
                      state.current = state.over;
                 }

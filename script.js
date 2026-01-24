@@ -8,7 +8,7 @@ const state = { current: 0, getReady: 0, game: 1, over: 2 };
 
 // ¿Quieres ver las cajas de colisión? true = SÍ, false = NO
 // Cuando termines de probar, cambia esto a false
-const DEBUG = false; 
+const DEBUG = true; 
 
 // --- CARGA DE IMÁGENES ---
 const sprites = {

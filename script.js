@@ -8,7 +8,7 @@ const RAD = Math.PI / 180;
 // Estados: 0=GetReady, 1=Game, 2=GameOver, 3=WIN
 const state = { current: 0, getReady: 0, game: 1, over: 2, win: 3 };
 
-// MODO DEBUG: Ponlo en false cuando termines de ajustar
+// MODO DEBUG
 const DEBUG = false; 
 
 // --- CARGA DE IMÁGENES ---
@@ -25,10 +25,8 @@ sprites.bg.src = "fondo.png";
 sprites.owl.src = "buho.png"; 
 
 // --- VARIABLES DE JUEGO ---
-let scoreValue = 0;
 let pipesPassed = 0; 
-let bonusText = ""; 
-let bonusTimer = 0; 
+let displayScore = "0%"; // Ahora el puntaje es texto (porcentaje)
 
 // --- OBJETOS ---
 
@@ -52,9 +50,9 @@ const bird = {
     radius: 25, 
     speed: 0,
     
-    // --- FÍSICAS SUAVES (Caída lenta) ---
-    gravity: 0.4,  // Antes 0.8 (Ahora cae más lento)
-    jump: -8,      // Antes -15 (Salto ajustado para no chocar arriba)
+    // Físicas suaves
+    gravity: 0.4,  
+    jump: -8,      
     
     rotation: 0,
     
@@ -64,7 +62,6 @@ const bird = {
         ctx.save();
         ctx.translate(this.x, this.y);
         
-        // Rotación
         if(state.current == state.getReady || state.current == state.win) {
              this.rotation = 0;
         } else {
@@ -136,7 +133,6 @@ const pipes = {
             let topY = p.y; 
             let bottomY = p.y + this.gap;
             
-            // Dibujo Visual
             ctx.save();
             ctx.translate(p.x, topY);
             ctx.scale(1, -1);
@@ -144,7 +140,6 @@ const pipes = {
             ctx.restore();
             ctx.drawImage(sprites.pipe, p.x, bottomY, this.w, this.h);
 
-            // Debug
             if (DEBUG) {
                 ctx.strokeStyle = "red"; ctx.lineWidth = 3;
                 let hitX = p.x + this.hitMargin;
@@ -187,21 +182,18 @@ const pipes = {
                 }
             }
             
-            // Bonos
+            // --- LÓGICA DE PORCENTAJE ---
             if(p.x + this.w < bird.x && !p.passed) {
-                scoreValue += 1;
                 pipesPassed += 1;
                 p.passed = true;
                 
-                if(pipesPassed === 3) {
-                    bonusText = "¡BONO 50%!"; bonusTimer = 60; scoreValue += 50;
-                } else if(pipesPassed === 6) {
-                    bonusText = "¡BONO 100%!"; bonusTimer = 60; scoreValue += 100;
-                } else if(pipesPassed === 9) {
-                    bonusText = "¡BONO 150%!"; bonusTimer = 60; scoreValue += 150;
-                } else if(pipesPassed === 12) {
-                    bonusText = "¡LLEGASTE!"; bonusTimer = 100; scoreValue += 200;
-                    state.current = state.win;
+                // Actualizamos el "displayScore" SOLO en los hitos
+                if(pipesPassed === 3) displayScore = "50%";
+                else if(pipesPassed === 6) displayScore = "100%";
+                else if(pipesPassed === 9) displayScore = "150%";
+                else if(pipesPassed === 12) {
+                    displayScore = "200%";
+                    state.current = state.win; // GANASTE
                 }
             }
             
@@ -224,20 +216,15 @@ const ui = {
         ctx.strokeStyle = "#000";
         ctx.textAlign = "center";
         
+        // MOSTRAR SOLO EL PORCENTAJE
         if(state.current == state.game || state.current == state.win) {
             ctx.lineWidth = 4;
+            // Usamos una fuente dorada o llamativa para el %
             ctx.font = "80px Georgia";
-            ctx.strokeText(scoreValue, canvas.width/2, 100);
-            ctx.fillText(scoreValue, canvas.width/2, 100);
-            
-            if(bonusTimer > 0) {
-                ctx.fillStyle = "#FFD700"; 
-                ctx.font = "60px Verdana";
-                ctx.strokeText(bonusText, canvas.width/2, 200);
-                ctx.fillText(bonusText, canvas.width/2, 200);
-                bonusTimer--;
-                ctx.fillStyle = "#FFF"; 
-            }
+            ctx.fillStyle = "#FFD700"; // Dorado
+            ctx.strokeText(displayScore, canvas.width/2, 120);
+            ctx.fillText(displayScore, canvas.width/2, 120);
+            ctx.fillStyle = "#FFF"; // Volver a blanco
         }
 
         if(state.current == state.getReady) {
@@ -254,9 +241,15 @@ const ui = {
             ctx.font = "80px Georgia";
             ctx.strokeText("GAME OVER", canvas.width/2, canvas.height/2 - 50);
             ctx.fillText("GAME OVER", canvas.width/2, canvas.height/2 - 50);
+            
+            // Mostrar progreso alcanzado
+            ctx.font = "50px Verdana";
             ctx.fillStyle = "#FFF";
+            ctx.strokeText("Progreso: " + displayScore, canvas.width/2, canvas.height/2 + 30);
+            ctx.fillText("Progreso: " + displayScore, canvas.width/2, canvas.height/2 + 30);
+
             ctx.font = "40px Verdana";
-            ctx.fillText("Tap to Restart", canvas.width/2, canvas.height/2 + 100);
+            ctx.fillText("Tap to Restart", canvas.width/2, canvas.height/2 + 120);
         }
         else if(state.current == state.win) {
             if(sprites.owl.complete && sprites.owl.naturalHeight !== 0) {
@@ -274,7 +267,7 @@ const ui = {
             
             ctx.fillStyle = "#FFF";
             ctx.font = "40px Verdana";
-            ctx.fillText("¡Misión Cumplida!", canvas.width/2, canvas.height/2 + 150);
+            ctx.fillText("Bono Máximo Alcanzado", canvas.width/2, canvas.height/2 + 150);
             ctx.font = "30px Verdana";
             ctx.fillText("Click para jugar de nuevo", canvas.width/2, canvas.height/2 + 220);
         }
@@ -295,16 +288,16 @@ function action(evt) {
         case state.over: 
             bird.speed = 0;
             pipes.reset();
-            scoreValue = 0;
             pipesPassed = 0;
+            displayScore = "0%"; // Reiniciar porcentaje
             pipes.totalSpawned = 0;
             state.current = state.getReady;
             break;
         case state.win:
             bird.speed = 0;
             pipes.reset();
-            scoreValue = 0;
             pipesPassed = 0;
+            displayScore = "0%"; // Reiniciar porcentaje
             pipes.totalSpawned = 0;
             state.current = state.getReady;
             break;

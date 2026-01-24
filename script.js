@@ -103,11 +103,11 @@ const pipes = {
     gap: 390,
     
     // --- AJUSTES DE COLISIÓN ---
-    hitMargin: 20,     // Recorte lateral (ancho)
+    hitMargin: 40,     // Recorte lateral (ancho)
     
     // NUEVO: Recorte Vertical
     // Aumenta este número si el rojo se mete mucho en el hueco
-    columnaPadding: 170, 
+    columnaPadding: 200, 
     
     floorHeight: 50, 
     

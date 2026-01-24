@@ -102,7 +102,13 @@ const pipes = {
     w: 160,   
     h: 1000,  
     dx: 7,    
-    gap: 390, 
+    gap: 390,
+    
+    // --- NUEVO: MARGEN DE COLISIÓN ---
+    // Esto define cuántos píxeles recortamos de cada lado (izquierda y derecha)
+    // Si el rojo sigue sobresaliendo, AUMENTA este número.
+    // Si el rojo queda muy adentro, REDUCE este número.
+    hitMargin: 35, 
     
     draw: function() {
         if (!sprites.pipe.complete) return;
@@ -112,24 +118,22 @@ const pipes = {
             let topY = p.y; 
             let bottomY = p.y + this.gap;
             
-            // DIBUJO DE COLUMNAS
+            // DIBUJO DE COLUMNAS (Imagen completa)
             ctx.save();
             ctx.translate(p.x, topY);
             ctx.scale(1, -1);
             ctx.drawImage(sprites.pipe, 0, 0, this.w, this.h);
             ctx.restore();
-            
             ctx.drawImage(sprites.pipe, p.x, bottomY, this.w, this.h);
 
-            // DIBUJAR CAJAS ROJAS (Ajustadas a los bordes exactos)
+            // DIBUJAR CAJAS ROJAS (Ajustadas al margen)
             if (DEBUG) {
                 ctx.strokeStyle = "red";
                 ctx.lineWidth = 3;
                 
-                // --- CAMBIO: Margen eliminado ---
-                // Ahora la caja roja es exactamente del ancho de la columna
-                let hitX = p.x;
-                let hitW = this.w;
+                // Calculamos la posición y ancho ajustados
+                let hitX = p.x + this.hitMargin;
+                let hitW = this.w - (this.hitMargin * 2);
                 
                 // Caja Arriba
                 ctx.strokeRect(hitX, 0, hitW, topY); 
@@ -153,10 +157,10 @@ const pipes = {
             let p = this.position[i];
             p.x -= this.dx;
             
-            // --- COLISIONES EXACTAS ---
-            // Usamos las mismas medidas exactas que el dibujo
-            let hitX = p.x;
-            let hitW = this.w;
+            // --- COLISIONES AJUSTADAS AL MARGEN ---
+            // Usamos las mismas medidas que en el dibujo rojo
+            let hitX = p.x + this.hitMargin;
+            let hitW = this.w - (this.hitMargin * 2);
             let bottomPipeYPos = p.y + this.gap;
             
             // Lógica de choque

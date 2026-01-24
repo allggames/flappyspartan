@@ -73,7 +73,6 @@ const bird = {
         }
         ctx.rotate(this.rotation);
         
-        // Dibujamos a la guerrera
         if(state.current !== state.getReady) {
             ctx.drawImage(sprites.bird, -this.w/2, -this.h/2, this.w, this.h);
         }
@@ -208,32 +207,28 @@ const pipes = {
     totalSpawned: 0
 }
 
-// --- FUNCIÓN PARA DIBUJAR EL RECUADRO (Panel) ---
+// --- FUNCIÓN DE PANEL ---
 function drawPanel(height) {
-    const w = canvas.width * 0.85; // 85% del ancho de pantalla
-    const h = height || 400; // Altura variable
+    const w = canvas.width * 0.85; 
+    const h = height || 400; 
     const x = (canvas.width - w) / 2;
     const y = (canvas.height - h) / 2;
     
-    // 1. Sombra del recuadro
     ctx.fillStyle = "rgba(0, 0, 0, 0.5)";
-    ctx.fillRect(0, 0, canvas.width, canvas.height); // Fondo pantalla oscurecido
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    // 2. Fondo del recuadro (Negro solido)
     ctx.fillStyle = "#111"; 
     ctx.fillRect(x, y, w, h);
     
-    // 3. Borde Dorado
-    ctx.strokeStyle = "#FFD700"; // Dorado
+    ctx.strokeStyle = "#FFD700"; 
     ctx.lineWidth = 8;
     ctx.strokeRect(x, y, w, h);
     
-    // 4. Borde fino interior (detalle estético)
     ctx.strokeStyle = "#FFF";
     ctx.lineWidth = 2;
     ctx.strokeRect(x + 10, y + 10, w - 20, h - 20);
 
-    return { x, y, w, h }; // Retornamos coordenadas por si las necesitamos
+    return { x, y, w, h }; 
 }
 
 const ui = {
@@ -255,12 +250,11 @@ const ui = {
             ctx.fillStyle = "#FFF"; 
         }
 
-        // --- PANTALLA INICIO (RECUADRO) ---
+        // --- INICIO ---
         if(state.current == state.getReady) {
-            const panel = drawPanel(400); // Dibujamos recuadro de 400px alto
+            const panel = drawPanel(400); 
             const centerY = canvas.height / 2;
 
-            // Título
             ctx.fillStyle = "#f1c40f"; 
             ctx.font = "900 100px 'Cinzel Decorative', serif";
             ctx.shadowColor = "rgba(0,0,0,1)";
@@ -268,58 +262,77 @@ const ui = {
             ctx.fillText("SPARTAN", canvas.width/2, centerY - 50);
             ctx.shadowBlur = 0;
             
-            // Subtítulo
             ctx.fillStyle = "#FFF";
             ctx.font = "700 40px 'Cinzel', serif";
             ctx.fillText("TOCA PARA EMPEZAR", canvas.width/2, centerY + 80);
         } 
         
-        // --- PANTALLA GAME OVER (RECUADRO) ---
+        // --- GAME OVER / RECOMPENSA ---
         else if(state.current == state.over) {
-            const panel = drawPanel(500); // Recuadro más alto
+            const panel = drawPanel(500);
             const centerY = canvas.height / 2;
 
-            // Título Rojo
-            ctx.fillStyle = "#e74c3c"; 
-            ctx.font = "900 90px 'Cinzel Decorative', serif";
-            ctx.shadowBlur = 20;
-            ctx.fillText("GAME OVER", canvas.width/2, centerY - 100);
-            ctx.shadowBlur = 0;
-            
-            // Bono
-            ctx.fillStyle = "#FFD700";
-            ctx.font = "700 50px 'Cinzel', serif";
-            ctx.fillText("BONO: " + displayScore, canvas.width/2, centerY + 20);
+            // LÓGICA DE TEXTO SEGÚN PROGRESO
+            if (pipesPassed >= 3) {
+                // --- CASO BUENO (50% o más) ---
+                ctx.fillStyle = "#FFD700"; // Dorado
+                ctx.font = "900 80px 'Cinzel Decorative', serif";
+                ctx.shadowBlur = 20;
+                // Ajustamos el tamaño para que entre "FELICITACIONES"
+                ctx.fillText("¡BIEN HECHO!", canvas.width/2, centerY - 100);
+                ctx.shadowBlur = 0;
 
-            // Mensaje
-            ctx.fillStyle = "#FFF";
-            ctx.font = "700 35px 'Cinzel', serif";
-            ctx.fillText("INTENTA DE NUEVO", canvas.width/2, centerY + 120);
+                // Mostramos el Bono ganado
+                ctx.fillStyle = "#FFF";
+                ctx.font = "700 50px 'Cinzel', serif";
+                ctx.fillText("BONO OBTENIDO:", canvas.width/2, centerY + 0);
+                
+                ctx.fillStyle = "#FFD700";
+                ctx.font = "900 70px 'Cinzel Decorative', serif";
+                ctx.fillText(displayScore, canvas.width/2, centerY + 80);
+
+                // Mensaje pequeño
+                ctx.fillStyle = "#FFF";
+                ctx.font = "700 30px 'Cinzel', serif";
+                ctx.fillText("Toca para jugar de nuevo", canvas.width/2, centerY + 160);
+
+            } else {
+                // --- CASO MALO (0%) ---
+                ctx.fillStyle = "#e74c3c"; // Rojo
+                ctx.font = "900 90px 'Cinzel Decorative', serif";
+                ctx.shadowBlur = 20;
+                ctx.fillText("GAME OVER", canvas.width/2, centerY - 100);
+                ctx.shadowBlur = 0;
+                
+                ctx.fillStyle = "#999"; // Gris
+                ctx.font = "700 50px 'Cinzel', serif";
+                ctx.fillText("Sin Bono", canvas.width/2, centerY + 20);
+
+                ctx.fillStyle = "#FFF";
+                ctx.font = "700 35px 'Cinzel', serif";
+                ctx.fillText("INTENTA DE NUEVO", canvas.width/2, centerY + 120);
+            }
         }
         
-        // --- PANTALLA VICTORIA (RECUADRO) ---
+        // --- VICTORIA FINAL ---
         else if(state.current == state.win) {
-            const panel = drawPanel(600); // Recuadro muy alto para que quepa el búho
+            const panel = drawPanel(600); 
             const centerY = canvas.height / 2;
 
-            // Búho (Encima del recuadro o dentro)
             if(sprites.owl.complete && sprites.owl.naturalHeight !== 0) {
                 const owlSize = 250; 
-                // Lo dibujamos un poco arriba del centro
                 ctx.drawImage(sprites.owl, canvas.width/2 - owlSize/2, centerY - 320, owlSize, owlSize);
             }
 
-            // Título
             ctx.fillStyle = "#FFD700"; 
             ctx.font = "900 100px 'Cinzel Decorative', serif";
             ctx.shadowBlur = 25;
             ctx.fillText("VICTORIA", canvas.width/2, centerY + 20);
             ctx.shadowBlur = 0;
             
-            // Bono
             ctx.fillStyle = "#FFF";
             ctx.font = "700 50px 'Cinzel', serif";
-            ctx.fillText("BONO: " + displayScore, canvas.width/2, centerY + 100);
+            ctx.fillText("BONO TOTAL: " + displayScore, canvas.width/2, centerY + 100);
 
             ctx.font = "700 30px 'Cinzel', serif";
             ctx.fillText("Click para jugar de nuevo", canvas.width/2, centerY + 180);

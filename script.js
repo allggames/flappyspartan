@@ -5,7 +5,7 @@ const ctx = canvas.getContext("2d");
 let frames = 0;
 const RAD = Math.PI / 180;
 
-// Estados: 0=GetReady, 1=Game, 2=GameOver, 3=WIN (Victoria)
+// Estados: 0=GetReady, 1=Game, 2=GameOver, 3=WIN
 const state = { current: 0, getReady: 0, game: 1, over: 2, win: 3 };
 
 // MODO DEBUG: Ponlo en false cuando termines de ajustar
@@ -22,7 +22,7 @@ const sprites = {
 sprites.bird.src = "guerrera.png"; 
 sprites.pipe.src = "columna.png";
 sprites.bg.src = "fondo.png";
-sprites.owl.src = "buho.png"; // ¡Tu imagen del Jefe Final!
+sprites.owl.src = "buho.png"; 
 
 // --- VARIABLES DE JUEGO ---
 let scoreValue = 0;
@@ -51,8 +51,11 @@ const bird = {
     h: 180, 
     radius: 25, 
     speed: 0,
-    gravity: 0.8,
-    jump: -15, 
+    
+    // --- FÍSICAS SUAVES (Caída lenta) ---
+    gravity: 0.4,  // Antes 0.8 (Ahora cae más lento)
+    jump: -8,      // Antes -15 (Salto ajustado para no chocar arriba)
+    
     rotation: 0,
     
     draw: function() {
@@ -89,9 +92,7 @@ const bird = {
     },
     
     update: function() {
-        // En estado WIN, el pájaro se queda flotando en el centro
         if(state.current == state.win) {
-            // Movimiento suave de flotación
             this.y = canvas.height / 2 + 50 + 10 * Math.cos(frames/20);
             return;
         }
@@ -122,9 +123,8 @@ const pipes = {
     dx: 7,    
     gap: 390,
     
-    // --- TUS AJUSTES SOLICITADOS ---
-    hitMargin: 40,       // Hace la caja más flaca
-    columnaPadding: 200, // Hace la caja mucho más corta (perdonadora)
+    hitMargin: 40,      
+    columnaPadding: 200, 
     
     floorHeight: 50, 
     
@@ -136,7 +136,7 @@ const pipes = {
             let topY = p.y; 
             let bottomY = p.y + this.gap;
             
-            // Dibujo Visual (Columna completa)
+            // Dibujo Visual
             ctx.save();
             ctx.translate(p.x, topY);
             ctx.scale(1, -1);
@@ -144,16 +144,12 @@ const pipes = {
             ctx.restore();
             ctx.drawImage(sprites.pipe, p.x, bottomY, this.w, this.h);
 
-            // Debug (Cajas Rojas recortadas con tus medidas)
+            // Debug
             if (DEBUG) {
                 ctx.strokeStyle = "red"; ctx.lineWidth = 3;
                 let hitX = p.x + this.hitMargin;
                 let hitW = this.w - (this.hitMargin * 2);
-                
-                // Caja Arriba (con recorte vertical)
                 ctx.strokeRect(hitX, 0, hitW, topY - this.columnaPadding); 
-                
-                // Caja Abajo (con recorte vertical)
                 let boxY = bottomY + this.columnaPadding;
                 let boxH = (canvas.height - this.floorHeight) - boxY;
                 ctx.strokeRect(hitX, boxY, hitW, boxH);
@@ -164,9 +160,7 @@ const pipes = {
     update: function() {
         if(state.current !== state.game) return;
         
-        // --- GENERADOR ---
         if(frames % 110 == 0) {
-            // LÍMITE: Solo generamos 12 columnas en total
             if (this.totalSpawned < 12) { 
                 this.position.push({
                     x: canvas.width,
@@ -181,7 +175,7 @@ const pipes = {
             let p = this.position[i];
             p.x -= this.dx;
             
-            // Colisiones usando TUS variables
+            // Colisiones
             let hitX = p.x + this.hitMargin;
             let hitW = this.w - (this.hitMargin * 2);
             let techo = p.y - this.columnaPadding;
@@ -193,7 +187,7 @@ const pipes = {
                 }
             }
             
-            // --- BONOS ---
+            // Bonos
             if(p.x + this.w < bird.x && !p.passed) {
                 scoreValue += 1;
                 pipesPassed += 1;
@@ -207,7 +201,7 @@ const pipes = {
                     bonusText = "¡BONO 150%!"; bonusTimer = 60; scoreValue += 150;
                 } else if(pipesPassed === 12) {
                     bonusText = "¡LLEGASTE!"; bonusTimer = 100; scoreValue += 200;
-                    state.current = state.win; // ¡GANASTE!
+                    state.current = state.win;
                 }
             }
             
@@ -230,7 +224,6 @@ const ui = {
         ctx.strokeStyle = "#000";
         ctx.textAlign = "center";
         
-        // PUNTUACIÓN
         if(state.current == state.game || state.current == state.win) {
             ctx.lineWidth = 4;
             ctx.font = "80px Georgia";
@@ -266,13 +259,10 @@ const ui = {
             ctx.fillText("Tap to Restart", canvas.width/2, canvas.height/2 + 100);
         }
         else if(state.current == state.win) {
-            // --- PANTALLA FINAL CON BÚHO ---
             if(sprites.owl.complete && sprites.owl.naturalHeight !== 0) {
-                // Dibujamos el Búho (Imagen)
-                const owlSize = 300; // Tamaño grande
+                const owlSize = 300; 
                 ctx.drawImage(sprites.owl, canvas.width/2 - owlSize/2, canvas.height/2 - 300, owlSize, owlSize);
             } else {
-                // Si olvidaste poner la imagen, sale un cuadro dorado
                 ctx.fillStyle = "gold";
                 ctx.fillRect(canvas.width/2 - 50, canvas.height/2 - 200, 100, 100);
             }
@@ -311,7 +301,6 @@ function action(evt) {
             state.current = state.getReady;
             break;
         case state.win:
-            // Reiniciar tras ganar
             bird.speed = 0;
             pipes.reset();
             scoreValue = 0;
@@ -334,18 +323,15 @@ function loop() {
     bird.update();
     bird.draw();
     ui.draw(); 
-    
     frames++;
     requestAnimationFrame(loop);
 }
 
-// Carga
 let loaded = 0;
 const checkLoad = () => { loaded++; if(loaded >= 3) loop(); };
 sprites.bird.onload = checkLoad;
 sprites.pipe.onload = checkLoad;
 sprites.bg.onload = checkLoad;
-// El buho es opcional para arrancar
 sprites.owl.onload = () => {}; 
 
 setTimeout(() => { if(loaded < 3) loop(); }, 1000);

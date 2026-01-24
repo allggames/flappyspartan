@@ -6,7 +6,7 @@ let frames = 0;
 const RAD = Math.PI / 180;
 const state = { current: 0, getReady: 0, game: 1, over: 2 };
 
-// MODO DEBUG: true para ver las cajas rojas.
+// MODO DEBUG: true para ver las líneas rojas y ajustarlas.
 const DEBUG = true; 
 
 // --- CARGA DE IMÁGENES ---
@@ -83,7 +83,6 @@ const bird = {
             this.speed += this.gravity;
             this.y += this.speed;
             
-            // Suelo (50px desde abajo)
             if(this.y + this.h/2 >= canvas.height - 50) {
                 this.y = canvas.height - 50 - this.h/2;
                 if(state.current == state.game) state.current = state.over;
@@ -102,10 +101,14 @@ const pipes = {
     h: 1000,  
     dx: 7,    
     gap: 390,
-    hitMargin: 35, 
     
-    // Altura del suelo (Arena)
-    // Esto evita que el rojo siga hacia abajo
+    // --- AJUSTES DE COLISIÓN ---
+    hitMargin: 35,     // Recorte lateral (ancho)
+    
+    // NUEVO: Recorte Vertical
+    // Aumenta este número si el rojo se mete mucho en el hueco
+    columnaPadding: 40, 
+    
     floorHeight: 50, 
     
     draw: function() {
@@ -116,7 +119,7 @@ const pipes = {
             let topY = p.y; 
             let bottomY = p.y + this.gap;
             
-            // DIBUJO DE COLUMNAS
+            // DIBUJO (Visual)
             ctx.save();
             ctx.translate(p.x, topY);
             ctx.scale(1, -1);
@@ -124,7 +127,7 @@ const pipes = {
             ctx.restore();
             ctx.drawImage(sprites.pipe, p.x, bottomY, this.w, this.h);
 
-            // DIBUJAR CAJAS ROJAS
+            // DIBUJAR CAJAS ROJAS (Ajustadas)
             if (DEBUG) {
                 ctx.strokeStyle = "red";
                 ctx.lineWidth = 3;
@@ -132,13 +135,14 @@ const pipes = {
                 let hitX = p.x + this.hitMargin;
                 let hitW = this.w - (this.hitMargin * 2);
                 
-                // Caja Arriba (Hasta el techo 0)
-                ctx.strokeRect(hitX, 0, hitW, topY); 
+                // CAJA ARRIBA: Termina antes (restamos padding)
+                // Altura visual ajustada: topY - padding
+                ctx.strokeRect(hitX, 0, hitW, topY - this.columnaPadding); 
                 
-                // --- CAMBIO AQUÍ: Caja Abajo (Hasta el suelo) ---
-                // Calculamos la altura restando el suelo
-                let heightToFloor = (canvas.height - this.floorHeight) - bottomY;
-                ctx.strokeRect(hitX, bottomY, hitW, heightToFloor);
+                // CAJA ABAJO: Empieza después (sumamos padding)
+                let boxY = bottomY + this.columnaPadding;
+                let boxH = (canvas.height - this.floorHeight) - boxY;
+                ctx.strokeRect(hitX, boxY, hitW, boxH);
             }
         }
     },
@@ -157,15 +161,20 @@ const pipes = {
             let p = this.position[i];
             p.x -= this.dx;
             
-            // COLISIONES
+            // --- COLISIONES ---
             let hitX = p.x + this.hitMargin;
             let hitW = this.w - (this.hitMargin * 2);
             let bottomPipeYPos = p.y + this.gap;
             
+            // Límites verticales ajustados con el padding
+            let techoPeligoroso = p.y - this.columnaPadding; 
+            let sueloPeligroso = bottomPipeYPos + this.columnaPadding;
+
             // Lógica de choque
+            // 1. ¿Entró horizontalmente?
             if(bird.x + bird.radius > hitX && bird.x - bird.radius < hitX + hitW) {
-                // Verificamos colisión arriba O abajo (considerando el suelo)
-                if(bird.y - bird.radius < p.y || bird.y + bird.radius > bottomPipeYPos) {
+                // 2. ¿Chocó arriba (ajustado) O abajo (ajustado)?
+                if(bird.y - bird.radius < techoPeligoroso || bird.y + bird.radius > sueloPeligroso) {
                      state.current = state.over;
                 }
             }

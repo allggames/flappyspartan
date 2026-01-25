@@ -165,7 +165,7 @@ const pipes = {
     update: function() {
         if(state.current !== state.game) return;
         
-        if(frames % 110 == 0) {
+        if(frames % 90 == 0) {
             if (this.totalSpawned < 12) { 
                 this.position.push({
                     x: canvas.width,

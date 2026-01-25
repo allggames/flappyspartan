@@ -59,8 +59,11 @@ const bird = {
     h: 240, 
     radius: 25, 
     speed: 0,
-    gravity: 0.4,  
-    jump: -8,      
+    
+    // --- AJUSTE DE FÍSICAS PARA PC ---
+    gravity: 0.25,   // Antes 0.4 (Cae más lento)
+    jump: -4.6,      // Antes -8 (Salto más suave)
+    
     rotation: 0,
     
     draw: function() {

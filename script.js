@@ -62,7 +62,7 @@ const bird = {
     
     // --- AJUSTE DE FÍSICAS PARA PC ---
     gravity: 0.25,   // Antes 0.4 (Cae más lento)
-    jump: -4.6,      // Antes -8 (Salto más suave)
+    jump: -8,     
     
     rotation: 0,
     

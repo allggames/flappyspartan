@@ -366,21 +366,36 @@ const ui = {
         ctx.fillStyle = "#000";
         ctx.fillRect(restartBtn.x + 5, restartBtn.y + 5, restartBtn.w, restartBtn.h);
 
-        // Fondo del botón (Dorado)
-        ctx.fillStyle = "#FFD700";
-        ctx.fillRect(restartBtn.x, restartBtn.y, restartBtn.w, restartBtn.h);
-
-        // Borde del botón
-        ctx.strokeStyle = "#C0A000";
-        ctx.lineWidth = 4;
-        ctx.strokeRect(restartBtn.x, restartBtn.y, restartBtn.w, restartBtn.h);
-
-        // Texto del botón
-        ctx.fillStyle = "#3e2723"; // Marrón oscuro para contraste
-        ctx.font = "700 35px 'Cinzel', serif";
-        ctx.fillText("JUGAR DE NUEVO", canvas.width/2, restartBtn.y + 52);
+        // Si ganaron (win), el botón es VERDE (Reclamar)
+        // Si perdieron (over), el botón sigue DORADO (Reintentar)
+        if (state.current == state.win) {
+            // Fondo Verde Casino
+            ctx.fillStyle = "#073b12";
+            ctx.fillRect(restartBtn.x, restartBtn.y, restartBtn.w, restartBtn.h);
+            // Borde Blanco
+            ctx.strokeStyle = "#ffffff";
+            ctx.lineWidth = 4;
+            ctx.strokeRect(restartBtn.x, restartBtn.y, restartBtn.w, restartBtn.h);
+            
+            // Texto del botón (Reclamar)
+            ctx.fillStyle = "#ffffff"; 
+            ctx.font = "700 35px 'Cinzel', serif";
+            ctx.fillText("RECLAMAR PREMIO", canvas.width/2, restartBtn.y + 52);
+        } else {
+            // Fondo del botón (Dorado original)
+            ctx.fillStyle = "#FFD700";
+            ctx.fillRect(restartBtn.x, restartBtn.y, restartBtn.w, restartBtn.h);
+            // Borde Dorado
+            ctx.strokeStyle = "#C0A000";
+            ctx.lineWidth = 4;
+            ctx.strokeRect(restartBtn.x, restartBtn.y, restartBtn.w, restartBtn.h);
+            
+            // Texto del botón (Reintentar)
+            ctx.fillStyle = "#3e2723"; 
+            ctx.font = "700 35px 'Cinzel', serif";
+            ctx.fillText("JUGAR DE NUEVO", canvas.width/2, restartBtn.y + 52);
+        }
     }
-}
 
 // --- FUNCIÓN PARA DETECTAR EL CLICK EXACTO ---
 function getClickPos(evt) {
@@ -420,7 +435,6 @@ function action(evt) {
             
         case state.over: 
         case state.win:
-            // --- AQUÍ ESTÁ LA MAGIA DEL BOTÓN ---
             // Calculamos dónde hizo click el usuario
             const click = getClickPos(evt);
             
@@ -430,15 +444,22 @@ function action(evt) {
                 click.y >= restartBtn.y && 
                 click.y <= restartBtn.y + restartBtn.h) {
                 
-                // SOLO SI TOCÓ EL BOTÓN: Reiniciamos
-                bird.speed = 0;
-                pipes.reset();
-                pipesPassed = 0;
-                displayScore = "0%"; 
-                pipes.totalSpawned = 0;
-                state.current = state.getReady;
+                // Si el juego terminó en VICTORIA y tocaron el botón, REDIRIGIR AL CHAT
+                if (state.current == state.win) {
+                    const url = typeof SITE_CONFIG !== 'undefined' ? SITE_CONFIG.chatUrl : "https://www.casinoatenea.com/";
+                    window.location.href = url + "?open=true";
+                } 
+                // Si el juego terminó en GAME OVER, reiniciamos para que jueguen de nuevo
+                else {
+                    bird.speed = 0;
+                    pipes.reset();
+                    pipesPassed = 0;
+                    displayScore = "0%"; 
+                    pipes.totalSpawned = 0;
+                    state.current = state.getReady;
+                }
             }
-            // Si tocó fuera, no pasa nada (break)
+            // Si tocó fuera, no pasa nada
             break;
     }
 }

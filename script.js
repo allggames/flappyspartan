@@ -379,8 +379,8 @@ const ui = {
 
         // --- ACÁ ESTÁ EL CAMBIO VISUAL DEL BOTÓN DE ATENEA ---
         if (state.current == state.win || (state.current == state.over && pipesPassed >= 3)) {
-            // Fondo Verde (Tienen premio)
-            ctx.fillStyle = "#073b12";
+            // Fondo CELESTE vibrante
+            ctx.fillStyle = "#29b6f6"; 
             ctx.fillRect(restartBtn.x, restartBtn.y, restartBtn.w, restartBtn.h);
             // Borde Blanco
             ctx.strokeStyle = "#ffffff";

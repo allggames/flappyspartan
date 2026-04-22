@@ -34,19 +34,20 @@ let displayScore = "0%";
 let restartBtn = {
     x: 0,
     y: 0,
-    w: 300,
-    h: 80
+    w: 380, // Un poco más ancho para el texto nuevo
+    h: 90
 };
 
 // --- OBJETOS ---
 
 const bg = {
     draw: function() {
-        if (!sprites.bg.complete) {
+        // ANTICRASHEO: Si no hay fondo, pinta azul celeste
+        if (!sprites.bg.complete || sprites.bg.naturalHeight === 0) {
              ctx.fillStyle = "#4bb4e6"; ctx.fillRect(0,0,canvas.width, canvas.height); return;
         }
-        const scale = canvas.height / sprites.bg.height;
-        const scaledWidth = sprites.bg.width * scale;
+        const scale = canvas.height / sprites.bg.naturalHeight;
+        const scaledWidth = sprites.bg.naturalWidth * scale;
         const xOffset = (canvas.width - scaledWidth) / 2;
         ctx.drawImage(sprites.bg, xOffset, 0, scaledWidth, canvas.height);
     }
@@ -61,14 +62,12 @@ const bird = {
     speed: 0,
     
     // --- AJUSTE DE FÍSICAS PARA PC ---
-    gravity: 0.25,   // Antes 0.4 (Cae más lento)
+    gravity: 0.25,   
     jump: -8,     
     
     rotation: 0,
     
     draw: function() {
-        if (!sprites.bird.complete) return;
-        
         ctx.save();
         ctx.translate(this.x, this.y);
         
@@ -84,7 +83,15 @@ const bird = {
         ctx.rotate(this.rotation);
         
         if(state.current !== state.getReady) {
-            ctx.drawImage(sprites.bird, -this.w/2, -this.h/2, this.w, this.h);
+            // ANTICRASHEO: Si no hay imagen, dibuja un círculo amarillo
+            if (sprites.bird.complete && sprites.bird.naturalWidth > 0) {
+                ctx.drawImage(sprites.bird, -this.w/2, -this.h/2, this.w, this.h);
+            } else {
+                ctx.fillStyle = "#f1c40f";
+                ctx.beginPath();
+                ctx.arc(0, 0, this.radius, 0, Math.PI*2);
+                ctx.fill();
+            }
         }
         
         if (DEBUG) {
@@ -136,19 +143,24 @@ const pipes = {
     floorHeight: 50, 
     
     draw: function() {
-        if (!sprites.pipe.complete) return;
-        
         for(let i = 0; i < this.position.length; i++) {
             let p = this.position[i];
             let topY = p.y; 
             let bottomY = p.y + this.gap;
             
-            ctx.save();
-            ctx.translate(p.x, topY);
-            ctx.scale(1, -1);
-            ctx.drawImage(sprites.pipe, 0, 0, this.w, this.h);
-            ctx.restore();
-            ctx.drawImage(sprites.pipe, p.x, bottomY, this.w, this.h);
+            // ANTICRASHEO: Si no hay tubo, dibuja rectángulos verdes
+            if (sprites.pipe.complete && sprites.pipe.naturalWidth > 0) {
+                ctx.save();
+                ctx.translate(p.x, topY);
+                ctx.scale(1, -1);
+                ctx.drawImage(sprites.pipe, 0, 0, this.w, this.h);
+                ctx.restore();
+                ctx.drawImage(sprites.pipe, p.x, bottomY, this.w, this.h);
+            } else {
+                ctx.fillStyle = "#2ecc71";
+                ctx.fillRect(p.x, topY - this.h, this.w, this.h);
+                ctx.fillRect(p.x, bottomY, this.w, this.h);
+            }
 
             if (DEBUG) {
                 ctx.strokeStyle = "red"; ctx.lineWidth = 3;
@@ -356,20 +368,18 @@ const ui = {
 
     // FUNCIÓN PARA DIBUJAR EL BOTÓN FÍSICO
     drawRestartButton: function(yPos) {
-        // Configuramos la posición del botón
-        restartBtn.w = 350;
-        restartBtn.h = 80;
+        restartBtn.w = 420;
+        restartBtn.h = 90;
         restartBtn.x = canvas.width / 2 - restartBtn.w / 2;
         restartBtn.y = yPos;
 
-        // Sombra del botón
+        // Sombra
         ctx.fillStyle = "#000";
         ctx.fillRect(restartBtn.x + 5, restartBtn.y + 5, restartBtn.w, restartBtn.h);
 
-        // Si ganaron (win), el botón es VERDE (Reclamar)
-        // Si perdieron (over), el botón sigue DORADO (Reintentar)
-        if (state.current == state.win) {
-            // Fondo Verde Casino
+        // --- ACÁ ESTÁ EL CAMBIO VISUAL DEL BOTÓN DE ATENEA ---
+        if (state.current == state.win || (state.current == state.over && pipesPassed >= 3)) {
+            // Fondo Verde (Tienen premio)
             ctx.fillStyle = "#073b12";
             ctx.fillRect(restartBtn.x, restartBtn.y, restartBtn.w, restartBtn.h);
             // Borde Blanco
@@ -377,12 +387,12 @@ const ui = {
             ctx.lineWidth = 4;
             ctx.strokeRect(restartBtn.x, restartBtn.y, restartBtn.w, restartBtn.h);
             
-            // Texto del botón (Reclamar)
+            // Texto del botón
             ctx.fillStyle = "#ffffff"; 
-            ctx.font = "700 35px 'Cinzel', serif";
-            ctx.fillText("RECLAMAR PREMIO", canvas.width/2, restartBtn.y + 52);
+            ctx.font = "700 34px 'Cinzel', serif";
+            ctx.fillText("RECLAMAR PREMIO 📸", canvas.width/2, restartBtn.y + 58);
         } else {
-            // Fondo del botón (Dorado original)
+            // Fondo Dorado (Perdieron sin premio)
             ctx.fillStyle = "#FFD700";
             ctx.fillRect(restartBtn.x, restartBtn.y, restartBtn.w, restartBtn.h);
             // Borde Dorado
@@ -390,12 +400,13 @@ const ui = {
             ctx.lineWidth = 4;
             ctx.strokeRect(restartBtn.x, restartBtn.y, restartBtn.w, restartBtn.h);
             
-            // Texto del botón (Reintentar)
+            // Texto del botón
             ctx.fillStyle = "#3e2723"; 
             ctx.font = "700 35px 'Cinzel', serif";
-            ctx.fillText("JUGAR DE NUEVO", canvas.width/2, restartBtn.y + 52);
+            ctx.fillText("JUGAR DE NUEVO", canvas.width/2, restartBtn.y + 58);
         }
     }
+}
 
 // --- FUNCIÓN PARA DETECTAR EL CLICK EXACTO ---
 function getClickPos(evt) {
@@ -403,7 +414,6 @@ function getClickPos(evt) {
     const scaleX = canvas.width / rect.width;
     const scaleY = canvas.height / rect.height;
     
-    // Obtenemos las coordenadas dependiendo si es touch o mouse
     let clientX, clientY;
     if(evt.type.startsWith('touch')) {
          clientX = evt.changedTouches[0].clientX;
@@ -421,7 +431,6 @@ function getClickPos(evt) {
 
 // --- CONTROL ---
 function action(evt) {
-    // Si es touch, prevenimos el scroll, excepto si toca el botón
     if(evt.type === 'touchstart') evt.preventDefault();
     
     switch(state.current) {
@@ -435,21 +444,17 @@ function action(evt) {
             
         case state.over: 
         case state.win:
-            // Calculamos dónde hizo click el usuario
             const click = getClickPos(evt);
             
-            // Verificamos si el click está DENTRO del rectángulo del botón
-            if (click.x >= restartBtn.x && 
-                click.x <= restartBtn.x + restartBtn.w &&
-                click.y >= restartBtn.y && 
-                click.y <= restartBtn.y + restartBtn.h) {
+            if (click.x >= restartBtn.x && click.x <= restartBtn.x + restartBtn.w &&
+                click.y >= restartBtn.y && click.y <= restartBtn.y + restartBtn.h) {
                 
-                // Si el juego terminó en VICTORIA y tocaron el botón, REDIRIGIR AL CHAT
-                if (state.current == state.win) {
+                // --- REDIRECCIÓN AL CHAT SI TIENEN PREMIO ---
+                if (state.current == state.win || (state.current == state.over && pipesPassed >= 3)) {
                     const url = typeof SITE_CONFIG !== 'undefined' ? SITE_CONFIG.chatUrl : "https://www.casinoatenea.com/";
                     window.location.href = url + "?open=true";
                 } 
-                // Si el juego terminó en GAME OVER, reiniciamos para que jueguen de nuevo
+                // REINTENTAR SI PERDIERON EN CERO
                 else {
                     bird.speed = 0;
                     pipes.reset();
@@ -459,7 +464,6 @@ function action(evt) {
                     state.current = state.getReady;
                 }
             }
-            // Si tocó fuera, no pasa nada
             break;
     }
 }
@@ -467,10 +471,13 @@ function action(evt) {
 // Event Listeners
 window.addEventListener("keydown", (e) => { 
     if(e.code === "Space" || e.code === "ArrowUp") {
-        // La barra espaciadora siempre sirve (opcional, si quieres quitarla borra esto)
         if(state.current !== state.game && state.current !== state.getReady) {
-             // Forzamos reinicio con espacio
-             bird.speed = 0; pipes.reset(); pipesPassed = 0; displayScore = "0%"; pipes.totalSpawned = 0; state.current = state.getReady;
+             if (state.current == state.win || (state.current == state.over && pipesPassed >= 3)) {
+                 const url = typeof SITE_CONFIG !== 'undefined' ? SITE_CONFIG.chatUrl : "https://www.casinoatenea.com/";
+                 window.location.href = url + "?open=true";
+             } else {
+                 bird.speed = 0; pipes.reset(); pipesPassed = 0; displayScore = "0%"; pipes.totalSpawned = 0; state.current = state.getReady;
+             }
         } else {
              action(e);
         }
@@ -491,12 +498,5 @@ function loop() {
     requestAnimationFrame(loop);
 }
 
-let loaded = 0;
-const checkLoad = () => { loaded++; if(loaded >= 3) loop(); };
-sprites.bird.onload = checkLoad;
-sprites.pipe.onload = checkLoad;
-sprites.bg.onload = checkLoad;
-sprites.owl.onload = () => {}; 
-sprites.panelTexture.onload = () => {}; 
-
-setTimeout(() => { if(loaded < 3) loop(); }, 1000);
+// Empezar a correr el juego de todas formas después de 1.5s
+setTimeout(() => { loop(); }, 1500);
